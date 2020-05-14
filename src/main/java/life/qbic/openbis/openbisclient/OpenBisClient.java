@@ -337,6 +337,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
 
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Projects --------------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
   /**
    * Function to get all projects which are registered in this openBIS instance
    *
@@ -350,6 +353,80 @@ public class OpenBisClient implements IOpenBisClient {
     return projects.getObjects();
   }
 
+  @Override
+  public List<Project> getProjectsOfSpace(String space) {
+    ensureLoggedIn();
+    ProjectSearchCriteria sc = new ProjectSearchCriteria();
+    sc.withSpace().withCode().thatEquals(space);
+
+    SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
+
+    return projects.getObjects();
+  }
+
+  @Override
+  public Map<String, List<Experiment>> getProjectExperimentMapping(String spaceIdentifier) {
+    Map<String, List<Experiment>> projectExperimentMapping = new HashMap<>();
+    List<Project> projects = getProjectsOfSpace(spaceIdentifier);
+    for (Project project : projects) {
+      String code = project.getCode();
+      projectExperimentMapping.put(code, getExperimentsOfProjectByCode(code));
+    }
+
+    return projectExperimentMapping;
+  }
+
+  @Override
+  public Project getProjectOfExperimentByIdentifier(String experimentIdentifier) {
+    ensureLoggedIn();
+    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+    sc.withId().thatEquals(new ExperimentIdentifier(experimentIdentifier));
+    SearchResult<Experiment> experiments =
+            v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+
+    if (experiments.getObjects().isEmpty()) {
+      return null;
+    } else {
+      return experiments.getObjects().get(0).getProject();
+    }
+  }
+
+  @Override
+  public Project getProjectByIdentifier(String projectIdentifier) {
+    ensureLoggedIn();
+    ProjectSearchCriteria sc = new ProjectSearchCriteria();
+    sc.withOrOperator();
+    sc.withId().thatEquals(new ProjectIdentifier(projectIdentifier));
+    sc.withCode().thatEquals(projectIdentifier);
+
+    SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
+
+    if (projects.getObjects().isEmpty()) {
+      return null;
+    } else {
+      return projects.getObjects().get(0);
+    }
+  }
+
+  @Override
+  public Project getProjectByCode(String projectCode) {
+    ensureLoggedIn();
+    ProjectSearchCriteria sc = new ProjectSearchCriteria();
+    sc.withOrOperator();
+    sc.withId().thatEquals(new ProjectIdentifier(projectCode));
+    sc.withCode().thatEquals(projectCode);
+
+    SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
+
+    if (projects.getObjects().isEmpty()) {
+      return null;
+    } else {
+      return projects.getObjects().get(0);
+    }
+  }
+
+
+
   /**
    * Function to list all Experiments which are registered in the openBIS instance.
    *
@@ -362,7 +439,6 @@ public class OpenBisClient implements IOpenBisClient {
         new ExperimentSearchCriteria(), fetchExperimentsCompletely());
     return experiments.getObjects();
   }
-
 
   /**
    * Function to retrieve all samples of a given experiment Note: seems to throw a
@@ -518,18 +594,6 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   @Override
-  public Map<String, List<Experiment>> getProjectExperimentMapping(String spaceIdentifier) {
-    Map<String, List<Experiment>> projectExperimentMapping = new HashMap<>();
-    List<Project> projects = getProjectsOfSpace(spaceIdentifier);
-    for (Project project : projects) {
-      String code = project.getCode();
-      projectExperimentMapping.put(code, getExperimentsOfProjectByCode(code));
-    }
-
-    return projectExperimentMapping;
-  }
-
-  @Override
   public List<Experiment> getExperimentsOfSpace(String spaceIdentifier) {
     ensureLoggedIn();
     ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
@@ -565,53 +629,6 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   @Override
-  public List<Project> getProjectsOfSpace(String space) {
-    ensureLoggedIn();
-    ProjectSearchCriteria sc = new ProjectSearchCriteria();
-    sc.withSpace().withCode().thatEquals(space);
-
-    SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
-
-    return projects.getObjects();
-  }
-
-
-
-  @Override
-  public Project getProjectByIdentifier(String projectIdentifier) {
-    ensureLoggedIn();
-    ProjectSearchCriteria sc = new ProjectSearchCriteria();
-    sc.withOrOperator();
-    sc.withId().thatEquals(new ProjectIdentifier(projectIdentifier));
-    sc.withCode().thatEquals(projectIdentifier);
-
-    SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
-
-    if (projects.getObjects().isEmpty()) {
-      return null;
-    } else {
-      return projects.getObjects().get(0);
-    }
-  }
-
-  @Override
-  public Project getProjectByCode(String projectCode) {
-    ensureLoggedIn();
-    ProjectSearchCriteria sc = new ProjectSearchCriteria();
-    sc.withOrOperator();
-    sc.withId().thatEquals(new ProjectIdentifier(projectCode));
-    sc.withCode().thatEquals(projectCode);
-
-    SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
-
-    if (projects.getObjects().isEmpty()) {
-      return null;
-    } else {
-      return projects.getObjects().get(0);
-    }
-  }
-
-  @Override
   public Experiment getExperimentByCode(String experimentCode) {
     ensureLoggedIn();
     ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
@@ -638,21 +655,6 @@ public class OpenBisClient implements IOpenBisClient {
         v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
 
     return experiment.getObjects().get(0);
-  }
-
-  @Override
-  public Project getProjectOfExperimentByIdentifier(String experimentIdentifier) {
-    ensureLoggedIn();
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withId().thatEquals(new ExperimentIdentifier(experimentIdentifier));
-    SearchResult<Experiment> experiments =
-        v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
-
-    if (experiments.getObjects().isEmpty()) {
-      return null;
-    } else {
-      return experiments.getObjects().get(0).getProject();
-    }
   }
 
   /**
