@@ -121,8 +121,14 @@ public class OpenBisClient implements IOpenBisClient {
     return v3;
   }
 
+
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- login / logout  -------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
   /**
-   * Checks if we are logged in
+   * Checks if issued session token is still active in openBIS.
+   * Session tokens are issued with {@link #login() login} and {@link #loginAsUser(String) loginAsUser}.
+   * @return True if session token is still active else false
    */
   @Override
   public boolean loggedin() {
@@ -134,38 +140,40 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * logs out of the OpenBIS server
+   * Logs out of the openBIS server and invalidates the issued session token.
    */
   @Override
   public void logout() {
     if (loggedin()) {
       v3.logout(sessionToken);
-      // TODO Set sessionToken to null
-      sessionToken = null;
-    } else {
     }
-
+    sessionToken = null;
   }
 
   /**
-   * logs in to the OpenBIS server with the system userid after calling this function, the user has
-   * to provide the password
+   * Logs in to the openBIS server with the user provided at instantiation of this class
+   *   and invalidates current session token if present.
    */
   @Override
   public void login() {
     if (loggedin()) {
       logout();
     }
-    // login to obtain a session token
+    // Login to obtain a session token
     sessionToken = v3.login(userId, password);
   }
 
+  /**
+   * Logs into openBIS as the user of the provided username after logout if session of other user is still active.
+   * A user with the provided username has to exist in the openBIS server.
+   * @param user openBIS user name
+   */
   public void loginAsUser(String user) {
     if (loggedin()) {
       logout();
     }
 
-    // login to obtain a session token
+    // Login to obtain a session token
     sessionToken = v3.loginAs(userId, password, user);
   }
 
@@ -181,7 +189,8 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Checks if logged in, reconnects if not
+   * Checks if issued session token is still active in openBIS.
+   * If not, one attempt is made to reconnect to the openBIS server with the user provided at instantiation of this class.
    */
   @Override
   public void ensureLoggedIn() {
