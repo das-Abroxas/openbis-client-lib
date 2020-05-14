@@ -126,31 +126,6 @@ public class OpenBisClient implements IOpenBisClient {
   /* ----- login / logout  -------------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
   /**
-   * Checks if issued session token is still active in openBIS.
-   * Session tokens are issued with {@link #login() login} and {@link #loginAsUser(String) loginAsUser}.
-   * @return True if session token is still active else false
-   */
-  @Override
-  public boolean loggedin() {
-    try {
-      return v3.isSessionActive(sessionToken);
-    } catch (Exception e) {
-      return false;
-    }
-  }
-
-  /**
-   * Logs out of the openBIS server and invalidates the issued session token.
-   */
-  @Override
-  public void logout() {
-    if (loggedin()) {
-      v3.logout(sessionToken);
-    }
-    sessionToken = null;
-  }
-
-  /**
    * Logs in to the openBIS server with the user provided at instantiation of this class
    *   and invalidates current session token if present.
    */
@@ -177,15 +152,18 @@ public class OpenBisClient implements IOpenBisClient {
     sessionToken = v3.loginAs(userId, password, user);
   }
 
-
   /**
-   * Get session token of current openBIS session
-   *
-   * @return session token as string
+   * Checks if issued session token is still active in openBIS.
+   * Session tokens are issued with {@link #login() login} and {@link #loginAsUser(String) loginAsUser}.
+   * @return True if session token is still active else false
    */
   @Override
-  public String getSessionToken() {
-    return sessionToken;
+  public boolean loggedin() {
+    try {
+      return v3.isSessionActive(sessionToken);
+    } catch (Exception e) {
+      return false;
+    }
   }
 
   /**
@@ -200,8 +178,28 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to get a list of all space identifiers which are registered in this openBIS instance
+   * Logs out of the openBIS server and invalidates the issued session token.
+   */
+  @Override
+  public void logout() {
+    if (loggedin()) {
+      v3.logout(sessionToken);
+    }
+    sessionToken = null;
+  }
+
+  /**
+   * Get session token of current openBIS session
    *
+   * @return session token as string
+   */
+  @Override
+  public String getSessionToken() {
+    return sessionToken;
+  }
+
+  /**
+   * Function to get a list of all space identifiers which are registered in this openBIS instance
    * @return list with the identifiers of all available spaces
    */
   @Override
