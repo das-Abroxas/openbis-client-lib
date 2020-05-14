@@ -360,9 +360,16 @@ public class OpenBisClient implements IOpenBisClient {
    */
   public List<Project> listProjectsForUser(String user) {
     ensureLoggedIn(user);
-    SearchResult<Project> projects = v3.searchProjects(sessionToken, new ProjectSearchCriteria(), fetchProjectsCompletely());
 
-    return projects.getObjects();
+    try {
+      SearchResult<Project> projects = v3.searchProjects(sessionToken, new ProjectSearchCriteria(), fetchProjectsCompletely());
+      return projects.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error(String.format("Could not fetch projects of user %s. Does this user exist in openBIS?", user));
+      logger.warn("Returned empty list.");
+      return new ArrayList<>();
+    }
   }
 
   @Override
