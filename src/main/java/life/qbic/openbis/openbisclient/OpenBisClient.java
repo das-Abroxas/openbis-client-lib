@@ -262,6 +262,10 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Spaces ----------------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
   /**
    * Function to get a list of all space identifiers which are registered in this openBIS instance
    * @return list with the identifiers of all available spaces
@@ -278,6 +282,39 @@ public class OpenBisClient implements IOpenBisClient {
 
     return spaceIdentifiers;
   }
+
+  /**
+   * Returns Space names a given user should be able to see
+   *
+   * @param userID Username found in openBIS
+   * @return List of space names with projects this user has access to
+   */
+  @Override
+  public List<String> getUserSpaces(String userID) {
+    // this sets the user sessionToken
+    loginAsUser(userID);
+    List<String> spaceIdentifiers = new ArrayList<>();
+    // we are not using external functions to make sure this user is actually used
+    try {
+      SearchResult<Space> spaces =
+              v3.searchSpaces(sessionToken, new SpaceSearchCriteria(), new SpaceFetchOptions());
+      if (spaces != null) {
+        for (Space space : spaces.getObjects()) {
+          spaceIdentifiers.add(space.getCode());
+        }
+      }
+    } catch (UserFailureException u) {
+      logger.error("Could not fetch spaces for user " + userID
+              + ", because they could not be logged in. Is user " + this.userId + " an admin user?");
+      logger.warn("No spaces were returned.");
+    }
+    logout();
+    login();
+
+    return spaceIdentifiers;
+  }
+
+
 
   /**
    * Function to get all projects which are registered in this openBIS instance
@@ -517,36 +554,7 @@ public class OpenBisClient implements IOpenBisClient {
     return projects.getObjects();
   }
 
-  /**
-   * Returns Space names a given user should be able to see
-   *
-   * @param userID Username found in openBIS
-   * @return List of space names with projects this user has access to
-   */
-  @Override
-  public List<String> getUserSpaces(String userID) {
-    // this sets the user sessionToken
-    loginAsUser(userID);
-    List<String> spaceIdentifiers = new ArrayList<>();
-    // we are not using external functions to make sure this user is actually used
-    try {
-      SearchResult<Space> spaces =
-          v3.searchSpaces(sessionToken, new SpaceSearchCriteria(), new SpaceFetchOptions());
-      if (spaces != null) {
-        for (Space space : spaces.getObjects()) {
-          spaceIdentifiers.add(space.getCode());
-        }
-      }
-    } catch (UserFailureException u) {
-      logger.error("Could not fetch spaces for user " + userID
-          + ", because they could not be logged in. Is user " + this.userId + " an admin user?");
-      logger.warn("No spaces were returned.");
-    }
-    logout();
-    login();
 
-    return spaceIdentifiers;
-  }
 
   @Override
   public Project getProjectByIdentifier(String projectIdentifier) {
