@@ -3,11 +3,32 @@ package life.qbic.openbis.openbisclient.helper;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.fetchoptions.DataSetFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.fetchoptions.ExperimentFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.fetchoptions.ExperimentTypeFetchOptions;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.person.fetchoptions.PersonFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.fetchoptions.ProjectFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleTypeFetchOptions;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.fetchoptions.SpaceFetchOptions;
 
 public class OpenBisClientHelper {
+
+  public static PersonFetchOptions fetchPersonCompletely() {
+    PersonFetchOptions personFetchOptions = new PersonFetchOptions();
+    personFetchOptions.withRoleAssignments();
+    // personFetchOptions.withSpace();
+    personFetchOptions.withRegistrator();
+    personFetchOptions.withSpaceUsing(fetchSpacesCompletely());
+
+    return personFetchOptions;
+  }
+
+  public static SpaceFetchOptions fetchSpacesCompletely() {
+    SpaceFetchOptions spaceFetchOptions = new SpaceFetchOptions();
+    spaceFetchOptions.withProjects();
+    spaceFetchOptions.withRegistrator();
+    spaceFetchOptions.withSamples();
+
+    return spaceFetchOptions;
+  }
 
   public static SampleFetchOptions fetchSamplesCompletely() {
     SampleFetchOptions sampleFetchOptions = new SampleFetchOptions();
