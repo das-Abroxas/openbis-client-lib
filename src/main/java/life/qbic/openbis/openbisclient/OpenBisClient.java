@@ -111,14 +111,29 @@ public class OpenBisClient implements IOpenBisClient {
     return mapToChar(sum % 34);
   }
 
+
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Getter ----------------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
   /**
-   * Gets v 3.
+   * Returns the v3 ApplicationServerApi object.
    *
-   * @return the v 3
+   * @return openBIS v3 ApplicationServerApi
    */
-  // TODO Added for testing reasons...
   public IApplicationServerApi getV3() {
+    // ToDo: Should be removed so all API calls stay inside this class.
     return v3;
+  }
+
+  /**
+   * Get session token of current openBIS session
+   *
+   * @return session token as string
+   */
+  @Override
+  public String getSessionToken() {
+    // ToDo: Should be removed. Session token is nobody's business outside this class.
+    return sessionToken;
   }
 
 
@@ -188,15 +203,7 @@ public class OpenBisClient implements IOpenBisClient {
     sessionToken = null;
   }
 
-  /**
-   * Get session token of current openBIS session
-   *
-   * @return session token as string
-   */
-  @Override
-  public String getSessionToken() {
-    return sessionToken;
-  }
+
 
   /**
    * Function to get a list of all space identifiers which are registered in this openBIS instance
