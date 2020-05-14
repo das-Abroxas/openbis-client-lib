@@ -353,6 +353,18 @@ public class OpenBisClient implements IOpenBisClient {
     return projects.getObjects();
   }
 
+  /**
+   * Get all projects which are available to the provided user in this openBIS instance
+   * @param user openBIS user name
+   * @return List with all available projects for specific openBIS user
+   */
+  public List<Project> listProjectsForUser(String user) {
+    ensureLoggedIn(user);
+    SearchResult<Project> projects = v3.searchProjects(sessionToken, new ProjectSearchCriteria(), fetchProjectsCompletely());
+
+    return projects.getObjects();
+  }
+
   @Override
   public List<Project> getProjectsOfSpace(String space) {
     ensureLoggedIn();
