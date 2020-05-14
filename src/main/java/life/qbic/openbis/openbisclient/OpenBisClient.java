@@ -45,6 +45,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.text.WordUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -314,6 +316,25 @@ public class OpenBisClient implements IOpenBisClient {
     return spaceIdentifiers;
   }
 
+  /**
+   * Get all space codes which are available for the provided openBIS user.
+   * @param user openBIS user name
+   * @return List with codes of all available spaces for specific openBIS user
+   */
+  public List<String> listSpacesForUser(String user) {
+    ensureLoggedIn(user);
+
+    List<String> spaceIdentifiers = new ArrayList<>();
+    try {
+      SearchResult<Space> spaces = v3.searchSpaces(sessionToken, new SpaceSearchCriteria(), fetchSpacesCompletely());
+      spaceIdentifiers = spaces.getObjects().stream().map(Space::getCode).collect(Collectors.toList());
+
+    } catch (UserFailureException ufe) {
+      logger.error(String.format("User %s could not fetch spaces."));
+      logger.warn("Returned empty list.");
+    }
+    return spaceIdentifiers;
+  }
 
 
   /**
