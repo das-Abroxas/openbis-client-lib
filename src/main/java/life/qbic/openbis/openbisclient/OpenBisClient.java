@@ -54,7 +54,7 @@ import org.apache.logging.log4j.Logger;
 public class OpenBisClient implements IOpenBisClient {
 
   private final int TIMEOUT = 100000;
-  private final String userId, password, serviceURL;
+  private final String userId, password, serverUrl, asApiUrl, dsApiUrl;
   private final IApplicationServerApi v3;
   private final IDataStoreServerApi dss3;
   private static final Logger logger = LogManager.getLogger(OpenBisClient.class);
@@ -62,19 +62,22 @@ public class OpenBisClient implements IOpenBisClient {
   private String sessionToken;
 
   /**
-   * Instantiates a new Open bis client.
+   * Instantiates a new opnBIS client.
    *
-   * @param userId the user id
-   * @param password the password
-   * @param apiURL the api url
+   * @param userId The user id
+   * @param password The password
+   * @param serverURL The server url
    */
-  public OpenBisClient(String userId, String password, String apiURL) {
+  public OpenBisClient(String userId, String password, String serverURL) {
     this.userId = userId;
     this.password = password;
-    this.serviceURL = apiURL + IApplicationServerApi.SERVICE_URL;
-    // get a reference to AS API
-    v3 = HttpInvokerUtils.createServiceStub(IApplicationServerApi.class, serviceURL, TIMEOUT);
-    dss3 = HttpInvokerUtils.createServiceStub(IDataStoreServerApi.class, serviceURL, TIMEOUT);
+    this.serverUrl = serverURL;
+    this.asApiUrl = serverURL + "/openbis/openbis"+ IApplicationServerApi.SERVICE_URL;
+    this.dsApiUrl = serverURL + "/datastore" + IDataStoreServerApi.SERVICE_URL;
+
+    // Get a reference to Application Server API and Datastore Server API
+    v3 = HttpInvokerUtils.createServiceStub(IApplicationServerApi.class, asApiUrl, TIMEOUT);
+    dss3 = HttpInvokerUtils.createServiceStub(IDataStoreServerApi.class, dsApiUrl, TIMEOUT);
     sessionToken = null;
   }
 
@@ -840,7 +843,7 @@ public class OpenBisClient implements IOpenBisClient {
   @Override
   public URL getDataStoreDownloadURL(String dataSetCode, String openbisFilename)
       throws MalformedURLException {
-    String base = this.serviceURL.split(".de")[0] + ".de";
+    String base = this.serverUrl.split(".de")[0] + ".de";
     String downloadURL = base + ":444";
     downloadURL += "/datastore_server/";
 
@@ -855,7 +858,7 @@ public class OpenBisClient implements IOpenBisClient {
   @Override
   public URL getDataStoreDownloadURLLessGeneric(String dataSetCode, String openbisFilename)
       throws MalformedURLException {
-    String base = this.serviceURL.split(".de")[0] + ".de";
+    String base = this.serverUrl.split(".de")[0] + ".de";
     String downloadURL = base + ":444";
     downloadURL += "/datastore_server/";
 
