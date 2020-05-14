@@ -1,11 +1,7 @@
 package life.qbic.openbis.openbisclient;
 
-import static life.qbic.openbis.openbisclient.helper.OpenBisClientHelper.fetchDataSetsCompletely;
-import static life.qbic.openbis.openbisclient.helper.OpenBisClientHelper.fetchExperimentTypesCompletely;
-import static life.qbic.openbis.openbisclient.helper.OpenBisClientHelper.fetchExperimentsCompletely;
-import static life.qbic.openbis.openbisclient.helper.OpenBisClientHelper.fetchProjectsCompletely;
-import static life.qbic.openbis.openbisclient.helper.OpenBisClientHelper.fetchSampleTypesCompletely;
-import static life.qbic.openbis.openbisclient.helper.OpenBisClientHelper.fetchSamplesCompletely;
+import static life.qbic.openbis.openbisclient.helper.OpenBisClientHelper.*;
+
 import ch.ethz.sis.openbis.generic.asapi.v3.IApplicationServerApi;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.attachment.Attachment;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search.SearchResult;
@@ -17,11 +13,16 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.fetchoptions.Experime
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.id.ExperimentIdentifier;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.search.ExperimentSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.search.ExperimentTypeSearchCriteria;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.person.Person;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.person.search.PersonSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.Project;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.fetchoptions.ProjectFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.id.ProjectIdentifier;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.search.ProjectSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.PropertyType;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.roleassignment.Role;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.roleassignment.RoleAssignment;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.roleassignment.RoleLevel;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.Sample;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.SampleType;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleFetchOptions;
@@ -227,7 +228,39 @@ public class OpenBisClient implements IOpenBisClient {
     sessionToken = null;
   }
 
+  /**
+   * Returns whether a user is instance admin in openBIS.
+   * @param user openBIS user name
+   * @return true, if user is instance admin, false otherwise
+   * @throws IllegalArgumentException If no user with the provided name could be found.
+   */
+  @Override
+  public boolean isUserAdmin(String user) throws IllegalArgumentException {
+    ensureLoggedIn();
 
+    try {
+      PersonSearchCriteria psc = new PersonSearchCriteria();
+      psc.withUserId().thatEquals(user);
+
+      SearchResult<Person> person = v3.searchPersons(sessionToken, psc, fetchPersonCompletely());
+
+      if (person.getObjects().isEmpty()) {
+        throw new IllegalArgumentException("Could not find openBIS user with id: " + user);
+      }
+
+      for (RoleAssignment role : person.getObjects().get(0).getRoleAssignments()) {
+        // Only INSTANCE_ADMIN are accepted as openBIS admins
+        if (role.getRoleLevel().equals(RoleLevel.INSTANCE) && role.getRole().equals(Role.ADMIN)) {
+          return true;
+        }
+      }
+      return false;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch persons. Is currently logged in user admin? Returned false.");
+      return false;
+    }
+  }
 
   /**
    * Function to get a list of all space identifiers which are registered in this openBIS instance
@@ -513,16 +546,6 @@ public class OpenBisClient implements IOpenBisClient {
     login();
 
     return spaceIdentifiers;
-  }
-
-  /**
-   * Returns wether a user is instance admin in openBIS
-   *
-   * @return true, if user is instance admin, false otherwise
-   */
-  @Override
-  public boolean isUserAdmin(String userID) {
-    throw new NotImplementedException();// TODO
   }
 
   @Override
