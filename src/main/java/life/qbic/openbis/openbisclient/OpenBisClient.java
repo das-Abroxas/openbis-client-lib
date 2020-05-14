@@ -207,6 +207,16 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
+   * Checks if issued session token is still active in openBIS.
+   * If not, one attempt is made to reconnect to the openBIS server with the username provided.
+   */
+  public void ensureLoggedIn(String user) {
+    if (!this.loggedIn(userId)) {
+      this.loginAsUser(userId);
+    }
+  }
+
+  /**
    * Logs out of the openBIS server and invalidates the issued session token.
    */
   @Override
