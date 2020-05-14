@@ -54,10 +54,12 @@ import org.apache.logging.log4j.Logger;
 public class OpenBisClient implements IOpenBisClient {
 
   private final int TIMEOUT = 100000;
-  private String userId, password, sessionToken, serviceURL;
-  private IApplicationServerApi v3;
-  private IDataStoreServerApi dss3;
+  private final String userId, password, serviceURL;
+  private final IApplicationServerApi v3;
+  private final IDataStoreServerApi dss3;
   private static final Logger logger = LogManager.getLogger(OpenBisClient.class);
+
+  private String sessionToken;
 
   /**
    * Instantiates a new Open bis client.
