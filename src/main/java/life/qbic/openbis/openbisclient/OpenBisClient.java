@@ -182,6 +182,20 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
+   * Checks if session token for provided openBIS user is still active in openBIS.
+   * Session tokens are issued with {@link #login() login} and {@link #loginAsUser(String) loginAsUser}.
+   * @param user openBIS user name
+   * @return True if session token of user is still active else false
+   */
+  public boolean loggedIn(String user) {
+    try {
+      return v3.isSessionActive(sessionToken) && v3.getSessionInformation(sessionToken).getUserName().equals(user);
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  /**
    * Checks if issued session token is still active in openBIS.
    * If not, one attempt is made to reconnect to the openBIS server with the user provided at instantiation of this class.
    */
