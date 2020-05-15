@@ -275,14 +275,22 @@ public class OpenBisClient implements IOpenBisClient {
   @Override
   public List<String> listSpaces() {
     ensureLoggedIn();
-    SearchResult<Space> spaces =
-        v3.searchSpaces(sessionToken, new SpaceSearchCriteria(), new SpaceFetchOptions());
-    List<String> spaceIdentifiers = new ArrayList<>();
-    for (Space space : spaces.getObjects()) {
-      spaceIdentifiers.add(space.getCode());
-    }
 
-    return spaceIdentifiers;
+    try {
+      SearchResult<Space> spaces = v3.searchSpaces(sessionToken, new SpaceSearchCriteria(), new SpaceFetchOptions());
+      List<String> spaceIdentifiers = new ArrayList<>();
+
+      for (Space space : spaces.getObjects()) {
+        spaceIdentifiers.add(space.getCode());
+      }
+
+      return spaceIdentifiers;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch spaces from openBIS. Is currently logged in user admin?");
+      logger.warn("listSpaces() returned null.");
+      return null;
+    }
   }
 
   /**
