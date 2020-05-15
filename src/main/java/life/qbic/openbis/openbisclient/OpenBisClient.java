@@ -332,16 +332,17 @@ public class OpenBisClient implements IOpenBisClient {
   public List<String> listSpacesForUser(String user) {
     ensureLoggedIn(user);
 
-    List<String> spaceIdentifiers = new ArrayList<>();
     try {
       SearchResult<Space> spaces = v3.searchSpaces(sessionToken, new SpaceSearchCriteria(), fetchSpacesCompletely());
-      spaceIdentifiers = spaces.getObjects().stream().map(Space::getCode).collect(Collectors.toList());
+      List<String> spaceIdentifiers = spaces.getObjects().stream().map(Space::getCode).collect(Collectors.toList());
+
+      return spaceIdentifiers;
 
     } catch (UserFailureException ufe) {
-      logger.error(String.format("User %s could not fetch spaces."));
+      logger.error(String.format("User %s could not fetch spaces.", user));
       logger.warn("Returned empty list.");
+      return null;
     }
-    return spaceIdentifiers;
   }
 
 
@@ -356,8 +357,7 @@ public class OpenBisClient implements IOpenBisClient {
   @Override
   public List<Project> listProjects() {
     ensureLoggedIn();
-    SearchResult<Project> projects =
-        v3.searchProjects(sessionToken, new ProjectSearchCriteria(), fetchProjectsCompletely());
+    SearchResult<Project> projects = v3.searchProjects(sessionToken, new ProjectSearchCriteria(), fetchProjectsCompletely());
     return projects.getObjects();
   }
 
