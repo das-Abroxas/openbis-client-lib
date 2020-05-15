@@ -524,6 +524,25 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
+   * Get all Experiments which are available to the provided user in this openBIS instance
+   * @param user openBIS user name
+   * @return List with all available experiments for specific openBIS user
+   */
+  public List<Experiment> listExperimentsForUser(String user) {
+    ensureLoggedIn(user);
+
+    try {
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, new ExperimentSearchCriteria(), fetchExperimentsCompletely());
+      return experiments.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error(String.format("Could not fetch experiments of user %s. Does this user exist in openBIS?", user));
+      logger.warn("listExperimentsForUser(String user) returned null.");
+      return null;
+    }
+  }
+
+  /**
    * Returns a list of all Experiments of a certain user.
    *
    * @param userID ID of user
