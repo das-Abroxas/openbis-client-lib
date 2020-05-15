@@ -391,12 +391,20 @@ public class OpenBisClient implements IOpenBisClient {
   @Override
   public List<Project> getProjectsOfSpace(String space) {
     ensureLoggedIn();
-    ProjectSearchCriteria sc = new ProjectSearchCriteria();
-    sc.withSpace().withCode().thatEquals(space);
 
-    SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
+    try {
+      ProjectSearchCriteria sc = new ProjectSearchCriteria();
+      sc.withSpace().withCode().thatEquals(space);
 
-    return projects.getObjects();
+      SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
+
+      return projects.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch projects of space. Does the currently logged in user have sufficient permissions in openBIS? ");
+      logger.warn("getProjectsOfSpace(String space) returned null.");
+      return null;
+    }
   }
 
   @Override
