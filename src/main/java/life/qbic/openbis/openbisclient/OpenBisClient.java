@@ -969,71 +969,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
 
-
-
-  /**
-   * Function to list all datasets of a specific sample (watch out there are different dataset
-   * classes)
-   *
-   * @param sampleIdentifier identifier of the openBIS sample
-   * @return list with all datasets of the given sample
-   */
-  @Override
-  public List<DataSet> getDataSetsOfSampleByIdentifier(String sampleIdentifier) {
-    DataSetSearchCriteria sc = new DataSetSearchCriteria();
-    sc.withOrOperator();
-    sc.withSample().withId().thatEquals(new SampleIdentifier(sampleIdentifier));
-    SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
-
-    return dataSets.getObjects();
-  }
-
-  /**
-   * Function to list all datasets of a specific sample (watch out there are different dataset
-   * classes)
-   *
-   * @param sampleCode code or identifier of the openBIS sample
-   * @return list with all datasets of the given sample
-   */
-  @Override
-  public List<DataSet> getDataSetsOfSample(String sampleCode) {
-    DataSetSearchCriteria sc = new DataSetSearchCriteria();
-    sc.withSample().withCode().thatEquals(sampleCode);
-    SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
-
-    return dataSets.getObjects();
-  }
-
-  /**
-   * Function to list all datasets of a specific experiment (watch out there are different dataset
-   * classes)
-   *
-   * @param experimentPermID permId of the openBIS experiment
-   * @return list with all datasets of the given experiment
-   */
-  @Override
-  public List<DataSet> getDataSetsOfExperiment(String experimentPermID) {
-    DataSetSearchCriteria sc = new DataSetSearchCriteria();
-    sc.withExperiment().withPermId().thatEquals(experimentPermID);
-    SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
-
-    return dataSets.getObjects();
-  }
-
-  /**
-   * Returns all datasets of a given experiment. The new version should run smoother
-   *
-   * @param experimentIdentifier identifier or code of the openbis experiment
-   * @return list of all datasets of the given experiment
-   */
-  @Override
-  public List<DataSet> getDataSetsOfExperimentByIdentifier(String experimentIdentifier) {
-    DataSetSearchCriteria sc = new DataSetSearchCriteria();
-    sc.withExperiment().withId().thatEquals(new ExperimentIdentifier(experimentIdentifier));
-    SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
-    return dataSets.getObjects();
-  }
-
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- DataSets --------------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
   /**
    * Function to list all datasets of a specific openBIS space
    *
@@ -1055,7 +993,7 @@ public class OpenBisClient implements IOpenBisClient {
    * @return list with all datasets of the given project
    */
   @Override
-  public List<DataSet> getDataSetsOfProjectByIdentifier(String projectIdentifier) {
+  public List<DataSet> getDataSetsOfProjects(List<Project> projectIdentifier) {
     // TODO does not work yet
     return null;
   }
@@ -1067,9 +1005,94 @@ public class OpenBisClient implements IOpenBisClient {
    * @return list with all datasets of the given project
    */
   @Override
-  public List<DataSet> getDataSetsOfProjects(List<Project> projectIdentifier) {
+  public List<DataSet> getDataSetsOfProjectByIdentifier(String projectIdentifier) {
     // TODO does not work yet
     return null;
+  }
+
+  /**
+   * List all datasets for given experiment identifiers
+   *
+   * @param experimentIdentifiers list of experiment identifiers
+   * @return List of datasets
+   */
+  @Override
+  public List<DataSet> listDataSetsForExperiments(List<String> experimentIdentifiers) {
+    return null;
+  }
+
+  /**
+   * Returns all datasets of a given experiment. The new version should run smoother
+   *
+   * @param experimentIdentifier identifier or code of the openbis experiment
+   * @return list of all datasets of the given experiment
+   */
+  @Override
+  public List<DataSet> getDataSetsOfExperimentByIdentifier(String experimentIdentifier) {
+    DataSetSearchCriteria sc = new DataSetSearchCriteria();
+    sc.withExperiment().withId().thatEquals(new ExperimentIdentifier(experimentIdentifier));
+    SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+    return dataSets.getObjects();
+  }
+
+  /**
+   * Function to list all datasets of a specific experiment (watch out there are different dataset
+   * classes)
+   *
+   * @param experimentPermID permId of the openBIS experiment
+   * @return list with all datasets of the given experiment
+   */
+  @Override
+  public List<DataSet> getDataSetsOfExperiment(String experimentPermID) {
+    DataSetSearchCriteria sc = new DataSetSearchCriteria();
+    sc.withExperiment().withPermId().thatEquals(experimentPermID);
+    SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+
+    return dataSets.getObjects();
+  }
+
+  /**
+   * List all datasets for given sample identifiers
+   *
+   * @param sampleIdentifier list of sample identifiers
+   * @return List of datasets
+   */
+  @Override
+  public List<DataSet> listDataSetsForSamples(List<String> sampleIdentifier) {
+    return null;
+  }
+
+  /**
+   * Function to list all datasets of a specific sample (watch out there are different dataset
+   * classes)
+   *
+   * @param sampleCode code or identifier of the openBIS sample
+   * @return list with all datasets of the given sample
+   */
+  @Override
+  public List<DataSet> getDataSetsOfSample(String sampleCode) {
+    DataSetSearchCriteria sc = new DataSetSearchCriteria();
+    sc.withSample().withCode().thatEquals(sampleCode);
+    SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+
+    return dataSets.getObjects();
+  }
+
+  /**
+   * Function to list all datasets of a specific sample (watch out there are different dataset
+   * classes)
+   *
+   * @param sampleIdentifier identifier of the openBIS sample
+   * @return list with all datasets of the given sample
+   */
+  @Override
+  public List<DataSet> getDataSetsOfSampleByIdentifier(String sampleIdentifier) {
+    DataSetSearchCriteria sc = new DataSetSearchCriteria();
+    sc.withOrOperator();
+    sc.withSample().withId().thatEquals(new SampleIdentifier(sampleIdentifier));
+    SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+
+    return dataSets.getObjects();
   }
 
   @Override
@@ -1082,6 +1105,9 @@ public class OpenBisClient implements IOpenBisClient {
 
     return dataSets.getObjects();
   }
+
+
+
 
   @Override
   public List<Attachment> listAttachmentsForSampleByIdentifier(String sampleIdentifier) {
@@ -1389,30 +1415,8 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
-  /**
-   * List all datasets for given experiment identifiers
-   *
-   * @param experimentIdentifiers list of experiment identifiers
-   * @return List of datasets
-   */
-  @Override
-  public List<DataSet> listDataSetsForExperiments(List<String> experimentIdentifiers) {
-    return null;
-  }
-
   @Override
   public List<Sample> listSamplesForProjects(List<String> projectIdentifiers) {
-    return null;
-  }
-
-  /**
-   * List all datasets for given sample identifiers
-   *
-   * @param sampleIdentifier list of sample identifiers
-   * @return List of datasets
-   */
-  @Override
-  public List<DataSet> listDataSetsForSamples(List<String> sampleIdentifier) {
     return null;
   }
 
