@@ -1160,14 +1160,27 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * List all datasets for given sample identifiers
+   * List all datasets for given sample codes
    *
-   * @param sampleIdentifier list of sample identifiers
+   * @param sampleCodes list of sample codes
    * @return List of datasets
    */
   @Override
-  public List<DataSet> listDataSetsForSamples(List<String> sampleIdentifier) {
-    return null;
+  public List<DataSet> listDataSetsForSamples(List<String> sampleCodes) {
+    ensureLoggedIn();
+
+    try {
+      DataSetSearchCriteria dsc = new DataSetSearchCriteria();
+      dsc.withSample().withCodes().thatIn( sampleCodes );
+
+      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      return datasets.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("listDataSetsForSamples(List<String> sampleCodes) returned null.");
+      return null;
+    }
   }
 
   /**
