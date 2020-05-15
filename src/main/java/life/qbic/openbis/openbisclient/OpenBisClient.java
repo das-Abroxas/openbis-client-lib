@@ -500,7 +500,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
 
-
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Experiment / ExperimentType -------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
   /**
    * Function to list all Experiments which are registered in the openBIS instance.
    *
@@ -513,6 +515,173 @@ public class OpenBisClient implements IOpenBisClient {
         new ExperimentSearchCriteria(), fetchExperimentsCompletely());
     return experiments.getObjects();
   }
+
+  /**
+   * Returns a list of all Experiments of a certain user.
+   *
+   * @param userID ID of user
+   * @return A list containing the experiments
+   */
+  @Override
+  public List<Experiment> getExperimentsForUser(String userID) {
+    loginAsUser(userID);
+    // we are not reusing other functions to be sure the user in question is actually used
+    SearchResult<Experiment> experiments = null;
+    try {
+      experiments = v3.searchExperiments(sessionToken, new ExperimentSearchCriteria(),
+              fetchExperimentsCompletely());
+    } catch (UserFailureException u) {
+      logger.error("Could not fetch experiments for user " + userID
+              + ", because they could not be logged in. Is user " + this.userId + " an admin user?");
+      logger.warn("No experiments were returned.");
+    }
+    logout();
+    login();
+    if (experiments == null || experiments.getObjects().isEmpty()) {
+      return null;
+    } else {
+      return experiments.getObjects();
+    }
+  }
+
+  @Override
+  public List<Experiment> getExperimentsOfSpace(String spaceIdentifier) {
+    ensureLoggedIn();
+    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+    sc.withProject().withSpace().withCode().thatEquals(spaceIdentifier);
+
+    SearchResult<Experiment> experiments =
+            v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+
+    return experiments.getObjects();
+  }
+
+  @Override
+  public List<Experiment> getExperimentsOfProjectByIdentifier(String projectIdentifier) {
+    ensureLoggedIn();
+    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+    sc.withOrOperator();
+    sc.withProject().withId().thatEquals(new ProjectIdentifier(projectIdentifier));
+    sc.withProject().withCode().thatEquals(projectIdentifier);
+
+    SearchResult<Experiment> experiments =
+            v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+
+    return experiments.getObjects();
+  }
+
+  @Override
+  public List<Experiment> getExperimentsOfProjectByCode(String projectCode) {
+    // TODO Could be combined with getExperimentsOfProjectByIdentifier
+    ensureLoggedIn();
+    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+    sc.withProject().withCode().thatEquals(projectCode);
+
+    SearchResult<Experiment> experiments =
+            v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+
+    return experiments.getObjects();
+  }
+
+  /**
+   * Function to list all Experiments for a specific project which are registered in the openBIS
+   * instance. av: 19353 ms
+   *
+   * @param project the project for which the experiments should be listed
+   * @return list with all experiments registered in this openBIS instance
+   */
+  @Override
+  public List<Experiment> getExperimentsForProject(Project project) {
+    ensureLoggedIn();
+    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+    sc.withProject().withCode().thatEquals(project.getCode());
+
+    SearchResult<Experiment> experiments =
+            v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+
+    return experiments.getObjects();
+  }
+
+  /**
+   * Function to list all Experiments for a specific project which are registered in the openBIS
+   * instance.
+   *
+   * @param projectIdentifier project identifer as defined by openbis, for which the experiments
+   *        should be listed
+   * @return list with all experiments registered in this openBIS instance
+   */
+  @Override
+  public List<Experiment> getExperimentsForProject(String projectIdentifier) {
+    // TODO equal to getExperimentsOfProjectByIdentifier
+    ensureLoggedIn();
+    return getExperimentsOfProjectByIdentifier(projectIdentifier);
+  }
+
+  @Override
+  public Experiment getExperimentByCode(String experimentCode) {
+    ensureLoggedIn();
+    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+    sc.withCode().thatEquals(experimentCode);
+
+    SearchResult<Experiment> experiments =
+            v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+
+    if (experiments.getObjects().isEmpty()) {
+      return null;
+    } else {
+      return experiments.getObjects().get(0);
+    }
+  }
+
+  @Override
+  public Experiment getExperimentById(String experimentId) {
+    ensureLoggedIn();
+    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+    sc.withOrOperator();
+    sc.withId().thatEquals(new ExperimentIdentifier(experimentId));
+
+    SearchResult<Experiment> experiment =
+            v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+
+    return experiment.getObjects().get(0);
+  }
+
+  @Override
+  public List<Experiment> getExperimentsOfType(String type) {
+    ensureLoggedIn();
+    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+    sc.withType().withCode().thatEquals(type);
+
+    SearchResult<Experiment> experiments =
+            v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+
+    return experiments.getObjects();
+  }
+
+  /**
+   * Function to get a ExperimentType object of a experiment type
+   *
+   * @param experimentType the experiment type as string
+   * @return the ExperimentType object of the corresponding experiment type
+   */
+  @Override
+  public ExperimentType getExperimentTypeByString(String experimentType) {
+
+    ExperimentTypeSearchCriteria sc = new ExperimentTypeSearchCriteria();
+    sc.withCode().thatContains(experimentType);
+
+    SearchResult<ExperimentType> experimentTypes =
+            v3.searchExperimentTypes(sessionToken, sc, fetchExperimentTypesCompletely());
+
+    if (experimentTypes.getObjects().isEmpty()) {
+      return null;
+    } else {
+      return experimentTypes.getObjects().get(0);
+    }
+  }
+
+
+
 
   /**
    * Function to retrieve all samples of a given experiment Note: seems to throw a
@@ -607,91 +776,6 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   @Override
-  public List<Experiment> getExperimentsOfProjectByIdentifier(String projectIdentifier) {
-    ensureLoggedIn();
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withOrOperator();
-    sc.withProject().withId().thatEquals(new ProjectIdentifier(projectIdentifier));
-    sc.withProject().withCode().thatEquals(projectIdentifier);
-
-    SearchResult<Experiment> experiments =
-        v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
-
-    return experiments.getObjects();
-  }
-
-  /**
-   * Function to list all Experiments for a specific project which are registered in the openBIS
-   * instance. av: 19353 ms
-   *
-   * @param project the project for which the experiments should be listed
-   * @return list with all experiments registered in this openBIS instance
-   */
-  @Override
-  public List<Experiment> getExperimentsForProject(Project project) {
-    ensureLoggedIn();
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withProject().withCode().thatEquals(project.getCode());
-
-    SearchResult<Experiment> experiments =
-        v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
-
-    return experiments.getObjects();
-  }
-
-  /**
-   * Function to list all Experiments for a specific project which are registered in the openBIS
-   * instance.
-   *
-   * @param projectIdentifier project identifer as defined by openbis, for which the experiments
-   *        should be listed
-   * @return list with all experiments registered in this openBIS instance
-   */
-  @Override
-  public List<Experiment> getExperimentsForProject(String projectIdentifier) {
-    // TODO equal to getExperimentsOfProjectByIdentifier
-    ensureLoggedIn();
-    return getExperimentsOfProjectByIdentifier(projectIdentifier);
-  }
-
-  @Override
-  public List<Experiment> getExperimentsOfProjectByCode(String projectCode) {
-    // TODO Could be combined with getExperimentsOfProjectByIdentifier
-    ensureLoggedIn();
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withProject().withCode().thatEquals(projectCode);
-
-    SearchResult<Experiment> experiments =
-        v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
-
-    return experiments.getObjects();
-  }
-
-  @Override
-  public List<Experiment> getExperimentsOfSpace(String spaceIdentifier) {
-    ensureLoggedIn();
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withProject().withSpace().withCode().thatEquals(spaceIdentifier);
-
-    SearchResult<Experiment> experiments =
-        v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
-
-    return experiments.getObjects();
-  }
-
-  @Override
-  public List<Experiment> getExperimentsOfType(String type) {
-    ensureLoggedIn();
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withType().withCode().thatEquals(type);
-
-    SearchResult<Experiment> experiments =
-        v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
-
-    return experiments.getObjects();
-  }
-
-  @Override
   public List<Sample> getSamplesOfType(String type) {
     ensureLoggedIn();
     SampleSearchCriteria sampleSearchCriteria = new SampleSearchCriteria();
@@ -700,35 +784,6 @@ public class OpenBisClient implements IOpenBisClient {
     SearchResult<Sample> samples =
         v3.searchSamples(sessionToken, sampleSearchCriteria, fetchSamplesCompletely());
     return samples.getObjects();
-  }
-
-  @Override
-  public Experiment getExperimentByCode(String experimentCode) {
-    ensureLoggedIn();
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withCode().thatEquals(experimentCode);
-
-    SearchResult<Experiment> experiments =
-        v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
-
-    if (experiments.getObjects().isEmpty()) {
-      return null;
-    } else {
-      return experiments.getObjects().get(0);
-    }
-  }
-
-  @Override
-  public Experiment getExperimentById(String experimentId) {
-    ensureLoggedIn();
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withOrOperator();
-    sc.withId().thatEquals(new ExperimentIdentifier(experimentId));
-
-    SearchResult<Experiment> experiment =
-        v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
-
-    return experiment.getObjects().get(0);
   }
 
   /**
@@ -869,7 +924,6 @@ public class OpenBisClient implements IOpenBisClient {
     return null;
   }
 
-
   /**
    * Function to list the vocabulary terms for a given property which has been added to openBIS. The
    * property has to be a Controlled Vocabulary Property.
@@ -928,29 +982,6 @@ public class OpenBisClient implements IOpenBisClient {
 
     return types;
 
-  }
-
-
-  /**
-   * Function to get a ExperimentType object of a experiment type
-   *
-   * @param experimentType the experiment type as string
-   * @return the ExperimentType object of the corresponding experiment type
-   */
-  @Override
-  public ExperimentType getExperimentTypeByString(String experimentType) {
-
-    ExperimentTypeSearchCriteria sc = new ExperimentTypeSearchCriteria();
-    sc.withCode().thatContains(experimentType);
-
-    SearchResult<ExperimentType> experimentTypes =
-        v3.searchExperimentTypes(sessionToken, sc, fetchExperimentTypesCompletely());
-
-    if (experimentTypes.getObjects().isEmpty()) {
-      return null;
-    } else {
-      return experimentTypes.getObjects().get(0);
-    }
   }
 
   /**
@@ -1036,7 +1067,6 @@ public class OpenBisClient implements IOpenBisClient {
     return new URL(downloadURL);
   }
 
-
   @Override
   public Map<Sample, List<Sample>> getParentMap(List<Sample> samples) {
     // TODO samples must have fetched parents!
@@ -1060,7 +1090,6 @@ public class OpenBisClient implements IOpenBisClient {
   public List<String> getProjectTSV(String projectCode, String sampleType) {
     return null;
   }
-
 
   @Override
   public List<Sample> getChildrenSamples(Sample sample) {
@@ -1193,35 +1222,6 @@ public class OpenBisClient implements IOpenBisClient {
   public List<String> getVocabCodesForVocab(String vocabularyCode) {
     return null;
   }
-
-  /**
-   * Returns a list of all Experiments of a certain user.
-   *
-   * @param userID ID of user
-   * @return A list containing the experiments
-   */
-  @Override
-  public List<Experiment> getExperimentsForUser(String userID) {
-    loginAsUser(userID);
-    // we are not reusing other functions to be sure the user in question is actually used
-    SearchResult<Experiment> experiments = null;
-    try {
-      experiments = v3.searchExperiments(sessionToken, new ExperimentSearchCriteria(),
-          fetchExperimentsCompletely());
-    } catch (UserFailureException u) {
-      logger.error("Could not fetch experiments for user " + userID
-          + ", because they could not be logged in. Is user " + this.userId + " an admin user?");
-      logger.warn("No experiments were returned.");
-    }
-    logout();
-    login();
-    if (experiments == null || experiments.getObjects().isEmpty()) {
-      return null;
-    } else {
-      return experiments.getObjects();
-    }
-  }
-
 
   @Override
   public List<Experiment> listExperimentsOfProjects(List<Project> projectList) {
