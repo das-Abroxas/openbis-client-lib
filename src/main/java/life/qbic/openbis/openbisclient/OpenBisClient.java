@@ -657,33 +657,37 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
-  @Override
-  public Experiment getExperimentByCode(String experimentCode) {
+  public Experiment getExperiment(String experimentCodeOrIdentifier) {
     ensureLoggedIn();
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withCode().thatEquals(experimentCode);
 
-    SearchResult<Experiment> experiments =
-            v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+    try {
+      ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+      sc.withCode().thatEquals(experimentCodeOrIdentifier);
+      sc.withId().thatEquals( new ExperimentIdentifier(experimentCodeOrIdentifier) );
 
-    if (experiments.getObjects().isEmpty()) {
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+
+      return experiments.getObjects().isEmpty() ? null : experiments.getObjects().get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
+      logger.warn("getExperimentByCode(String experimentCode) returned null.");
       return null;
-    } else {
-      return experiments.getObjects().get(0);
     }
   }
 
   @Override
+  public Experiment getExperimentByCode(String experimentCode) {
+    // ToDo: Can be removed from IOpenBisClient as getExperiment(String) is sufficient
+
+    return getExperiment(experimentCode);  // ensureLoggedIn() is called in getExperiment
+  }
+
+  @Override
   public Experiment getExperimentById(String experimentId) {
-    ensureLoggedIn();
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withOrOperator();
-    sc.withId().thatEquals(new ExperimentIdentifier(experimentId));
+    // ToDo: Can be removed from IOpenBisClient as getExperiment(String) is sufficient
 
-    SearchResult<Experiment> experiment =
-            v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
-
-    return experiment.getObjects().get(0);
+    return getExperiment(experimentId);  // ensureLoggedIn() is called in getExperiment
   }
 
   @Override
