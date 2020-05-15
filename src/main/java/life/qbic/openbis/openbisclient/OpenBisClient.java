@@ -1066,8 +1066,22 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public List<DataSet> getDataSetsOfProjectByIdentifier(String projectIdentifier) {
-    // TODO does not work yet
-    return null;
+    ensureLoggedIn();
+
+    try {
+      DataSetSearchCriteria dsc = new DataSetSearchCriteria();
+      dsc.withOrOperator();
+      dsc.withSample().withProject().withCode().thatEquals(projectIdentifier);
+      dsc.withSample().withProject().withId().thatEquals( new ProjectIdentifier(projectIdentifier) );
+
+      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      return datasets.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getDataSetsOfProjects(List<Project> projects) returned null.");
+      return null;
+    }
   }
 
   /**
