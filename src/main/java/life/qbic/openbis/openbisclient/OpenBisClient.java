@@ -633,13 +633,20 @@ public class OpenBisClient implements IOpenBisClient {
   @Override
   public List<Experiment> getExperimentsForProject(Project project) {
     ensureLoggedIn();
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withProject().withCode().thatEquals(project.getCode());
 
-    SearchResult<Experiment> experiments =
-            v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+    try {
+      ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+      sc.withProject().withCode().thatEquals(project.getCode());
 
-    return experiments.getObjects();
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+
+      return experiments.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
+      logger.warn("getExperimentsForProject(Project project) returned null.");
+      return null;
+    }
   }
 
   /**
@@ -651,10 +658,24 @@ public class OpenBisClient implements IOpenBisClient {
    * @return list with all experiments registered in this openBIS instance
    */
   @Override
-  public List<Experiment> getExperimentsForProject(String projectIdentifier) {
-    // TODO equal to getExperimentsOfProjectByIdentifier
+  public List<Experiment> getExperimentsForProject(String projectCodeOrIdentifier) {
     ensureLoggedIn();
-    return getExperimentsOfProjectByIdentifier(projectIdentifier);
+
+    try {
+      ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+      sc.withOrOperator();
+      sc.withProject().withCode().thatEquals(projectCodeOrIdentifier);
+      sc.withProject().withId().thatEquals(new ProjectIdentifier(projectCodeOrIdentifier));
+
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+
+      return experiments.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
+      logger.warn("getExperimentsForProject(String projectCodeOrIdentifier) returned null.");
+      return null;
+    }
   }
 
   @Override
@@ -689,13 +710,20 @@ public class OpenBisClient implements IOpenBisClient {
   @Override
   public List<Experiment> getExperimentsOfType(String type) {
     ensureLoggedIn();
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withType().withCode().thatEquals(type);
 
-    SearchResult<Experiment> experiments =
-            v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+    try {
+      ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+      sc.withType().withCode().thatEquals(type);
 
-    return experiments.getObjects();
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+
+      return experiments.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
+      logger.warn("getExperimentsOfType(String type) returned null.");
+      return null;
+    }
   }
 
   /**
@@ -706,17 +734,20 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public ExperimentType getExperimentTypeByString(String experimentType) {
+    ensureLoggedIn();
 
-    ExperimentTypeSearchCriteria sc = new ExperimentTypeSearchCriteria();
-    sc.withCode().thatContains(experimentType);
+    try {
+      ExperimentTypeSearchCriteria sc = new ExperimentTypeSearchCriteria();
+      sc.withCode().thatContains(experimentType);
 
-    SearchResult<ExperimentType> experimentTypes =
-            v3.searchExperimentTypes(sessionToken, sc, fetchExperimentTypesCompletely());
+      SearchResult<ExperimentType> experimentTypes = v3.searchExperimentTypes(sessionToken, sc, fetchExperimentTypesCompletely());
 
-    if (experimentTypes.getObjects().isEmpty()) {
+      return experimentTypes.getObjects().isEmpty() ? null : experimentTypes.getObjects().get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch experiment types from openBIS. Is currently logged in user admin?");
+      logger.warn("getExperimentTypeByString(String experimentType) returned null.");
       return null;
-    } else {
-      return experimentTypes.getObjects().get(0);
     }
   }
 
