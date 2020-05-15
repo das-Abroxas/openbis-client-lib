@@ -848,13 +848,14 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
-  @Override
-  public Sample getSampleByIdentifier(String sampleIdentifier) {
+  public Sample getSample(String sampleCodeOrIdentifier) {
     ensureLoggedIn();
 
     try {
       SampleSearchCriteria sampleSearchCriteria = new SampleSearchCriteria();
-      sampleSearchCriteria.withId().thatEquals(new SampleIdentifier(sampleIdentifier));
+      sampleSearchCriteria.withOrOperator();
+      sampleSearchCriteria.withCode().thatEquals(sampleCodeOrIdentifier);
+      sampleSearchCriteria.withId().thatEquals(new SampleIdentifier(sampleCodeOrIdentifier));
 
       SearchResult<Sample> samples = v3.searchSamples(sessionToken, sampleSearchCriteria, fetchSamplesCompletely());
 
@@ -862,9 +863,16 @@ public class OpenBisClient implements IOpenBisClient {
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch samples. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getSampleByIdentifier(String sampleIdentifier) returned null.");
+      logger.warn("getSample(String sampleCodeOrIdentifier) returned null.");
       return null;
     }
+  }
+
+  @Override
+  public Sample getSampleByIdentifier(String sampleIdentifier) {
+    // ToDo: Can be removed from IOpenBisClient as getSample(String) is sufficient
+
+    return getSample(sampleIdentifier);  // ensureLoggedIn() is called in getSample
   }
 
   /**
