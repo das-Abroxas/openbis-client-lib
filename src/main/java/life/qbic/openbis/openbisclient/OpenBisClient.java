@@ -1017,10 +1017,21 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public List<DataSet> getDataSetsOfSpaceByIdentifier(String spaceIdentifier) {
-    DataSetSearchCriteria sc = new DataSetSearchCriteria();
-    sc.withSample().withSpace().withCode().thatEquals(spaceIdentifier);
-    SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
-    return dataSets.getObjects();
+    ensureLoggedIn();
+
+    try {
+      DataSetSearchCriteria sc = new DataSetSearchCriteria();
+      sc.withSample().withSpace().withCode().thatEquals(spaceIdentifier);
+
+      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+
+      return dataSets.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getDataSetsOfSpaceByIdentifier(String spaceIdentifier) returned null.");
+      return null;
+    }
   }
 
   /**
@@ -1066,10 +1077,21 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public List<DataSet> getDataSetsOfExperimentByIdentifier(String experimentIdentifier) {
-    DataSetSearchCriteria sc = new DataSetSearchCriteria();
-    sc.withExperiment().withId().thatEquals(new ExperimentIdentifier(experimentIdentifier));
-    SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
-    return dataSets.getObjects();
+    ensureLoggedIn();
+
+    try {
+      DataSetSearchCriteria sc = new DataSetSearchCriteria();
+      sc.withExperiment().withId().thatEquals(new ExperimentIdentifier(experimentIdentifier));
+
+      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+
+      return dataSets.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getDataSetsOfExperimentByIdentifier(String experimentIdentifier) returned null.");
+      return null;
+    }
   }
 
   /**
@@ -1081,11 +1103,21 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public List<DataSet> getDataSetsOfExperiment(String experimentPermID) {
-    DataSetSearchCriteria sc = new DataSetSearchCriteria();
-    sc.withExperiment().withPermId().thatEquals(experimentPermID);
-    SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+    ensureLoggedIn();
 
-    return dataSets.getObjects();
+    try {
+      DataSetSearchCriteria sc = new DataSetSearchCriteria();
+      sc.withExperiment().withPermId().thatEquals(experimentPermID);
+
+      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+
+      return dataSets.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getDataSetsOfExperiment(String experimentPermID) returned null.");
+      return null;
+    }
   }
 
   /**
@@ -1108,11 +1140,21 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public List<DataSet> getDataSetsOfSample(String sampleCode) {
-    DataSetSearchCriteria sc = new DataSetSearchCriteria();
-    sc.withSample().withCode().thatEquals(sampleCode);
-    SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+    ensureLoggedIn();
 
-    return dataSets.getObjects();
+    try {
+      DataSetSearchCriteria sc = new DataSetSearchCriteria();
+      sc.withSample().withCode().thatEquals(sampleCode);
+
+      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+
+      return dataSets.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getDataSetsOfSample(String sampleCode) returned null.");
+      return null;
+    }
   }
 
   /**
@@ -1124,23 +1166,41 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public List<DataSet> getDataSetsOfSampleByIdentifier(String sampleIdentifier) {
-    DataSetSearchCriteria sc = new DataSetSearchCriteria();
-    sc.withOrOperator();
-    sc.withSample().withId().thatEquals(new SampleIdentifier(sampleIdentifier));
-    SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+    ensureLoggedIn();
 
-    return dataSets.getObjects();
+    try {
+      DataSetSearchCriteria sc = new DataSetSearchCriteria();
+      sc.withOrOperator();
+      sc.withSample().withId().thatEquals(new SampleIdentifier(sampleIdentifier));
+
+      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+
+      return dataSets.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getDataSetsOfSampleByIdentifier(String sampleIdentifier) returned null.");
+      return null;
+    }
   }
 
   @Override
   public List<DataSet> getDataSetsByType(String type) {
     ensureLoggedIn();
-    DataSetSearchCriteria sc = new DataSetSearchCriteria();
-    sc.withType().withCode().thatEquals(type);
 
-    SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+    try {
+      DataSetSearchCriteria sc = new DataSetSearchCriteria();
+      sc.withType().withCode().thatEquals(type);
 
-    return dataSets.getObjects();
+      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+
+      return dataSets.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getDataSetsByType(String type) returned null.");
+      return null;
+    }
   }
 
 
