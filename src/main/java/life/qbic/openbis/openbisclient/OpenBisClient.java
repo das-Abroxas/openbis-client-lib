@@ -1037,13 +1037,25 @@ public class OpenBisClient implements IOpenBisClient {
   /**
    * Function to list all datasets of a specific openBIS project
    *
-   * @param projectIdentifier identifier of the openBIS project
+   * @param projects openBIS v3 Project objects
    * @return list with all datasets of the given project
    */
   @Override
-  public List<DataSet> getDataSetsOfProjects(List<Project> projectIdentifier) {
-    // TODO does not work yet
-    return null;
+  public List<DataSet> getDataSetsOfProjects(List<Project> projects) {
+    ensureLoggedIn();
+
+    try {
+      DataSetSearchCriteria dsc = new DataSetSearchCriteria();
+      dsc.withSample().withProject().withCodes().thatIn( projects.stream().map(Project::getCode).collect(Collectors.toList()) );
+
+      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      return datasets.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getDataSetsOfProjects(List<Project> projects) returned null.");
+      return null;
+    }
   }
 
   /**
