@@ -1245,6 +1245,61 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
 
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Vocabulary / VocabularyTerm -------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
+  /**
+   * Function to list the vocabulary terms for a given property which has been added to openBIS. The
+   * property has to be a Controlled Vocabulary Property.
+   *
+   * @param property the property type
+   * @return list of the vocabulary terms of the given property
+   */
+  @Override
+  public List<String> listVocabularyTermsForProperty(PropertyType property) {
+    return null;
+  }
+
+  /**
+   * Returns a map of Labels (keys) and Codes (values) in a Vocabulary in openBIS
+   *
+   * @param vocabularyCode Code of the Vocabulary type
+   * @return A map containing the labels as keys and codes as values in String format
+   */
+  @Override
+  public Map<String, String> getVocabCodesAndLabelsForVocab(String vocabularyCode) {
+    return null;
+  }
+
+  @Override
+  public Vocabulary getVocabulary(String vocabularyCode) {
+    return null;
+  }
+
+  /**
+   * Returns a list of all Codes in a Vocabulary in openBIS. This is useful when labels don't exist
+   * or are not needed.
+   *
+   * @param vocabularyCode Code of the Vocabulary type
+   * @return A list containing the codes of the vocabulary type
+   */
+  @Override
+  public List<String> getVocabCodesForVocab(String vocabularyCode) {
+    return null;
+  }
+
+  /**
+   * Function to get the label of a CV item for some property
+   *
+   * @param propertyType the property type
+   * @param propertyValue the property value
+   * @return Label of CV item
+   */
+  @Override
+  public String getCVLabelForProperty(PropertyType propertyType, String propertyValue) {
+    return null;
+  }
+
 
 
   @Override
@@ -1270,31 +1325,6 @@ public class OpenBisClient implements IOpenBisClient {
   @Override
   public Set<String> getSpaceMembers(String spaceCode) {
     // TODO cannot find an opportunity to do that
-    return null;
-  }
-
-  /**
-   * Function to list the vocabulary terms for a given property which has been added to openBIS. The
-   * property has to be a Controlled Vocabulary Property.
-   *
-   * @param property the property type
-   * @return list of the vocabulary terms of the given property
-   */
-  @Override
-  public List<String> listVocabularyTermsForProperty(PropertyType property) {
-    return null;
-
-  }
-
-  /**
-   * Function to get the label of a CV item for some property
-   *
-   * @param propertyType the property type
-   * @param propertyValue the property value
-   * @return Label of CV item
-   */
-  @Override
-  public String getCVLabelForProperty(PropertyType propertyType, String propertyValue) {
     return null;
   }
 
@@ -1507,34 +1537,6 @@ public class OpenBisClient implements IOpenBisClient {
     } else {
       return 0f;
     }
-  }
-
-  /**
-   * Returns a map of Labels (keys) and Codes (values) in a Vocabulary in openBIS
-   *
-   * @param vocabularyCode Code of the Vocabulary type
-   * @return A map containing the labels as keys and codes as values in String format
-   */
-  @Override
-  public Map<String, String> getVocabCodesAndLabelsForVocab(String vocabularyCode) {
-    return null;
-  }
-
-  @Override
-  public Vocabulary getVocabulary(String vocabularyCode) {
-    return null;
-  }
-
-  /**
-   * Returns a list of all Codes in a Vocabulary in openBIS. This is useful when labels don't exist
-   * or are not needed.
-   *
-   * @param vocabularyCode Code of the Vocabulary type
-   * @return A list containing the codes of the vocabulary type
-   */
-  @Override
-  public List<String> getVocabCodesForVocab(String vocabularyCode) {
-    return null;
   }
 
   @Override
