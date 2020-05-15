@@ -409,11 +409,20 @@ public class OpenBisClient implements IOpenBisClient {
 
   @Override
   public Map<String, List<Experiment>> getProjectExperimentMapping(String spaceIdentifier) {
+    // ToDo: Is this necessary? With getProjectsOfSpace(String) you also get all projects with their experiments.
+    //       With the correct ProjectFetchOptions the experiments are also fetched completely.
+    ensureLoggedIn();
+
     Map<String, List<Experiment>> projectExperimentMapping = new HashMap<>();
     List<Project> projects = getProjectsOfSpace(spaceIdentifier);
+
+    if (projects == null || projects.isEmpty()) { return projectExperimentMapping; }
+
     for (Project project : projects) {
       String code = project.getCode();
-      projectExperimentMapping.put(code, getExperimentsOfProjectByCode(code));
+      List<Experiment> experiments = getExperimentsOfProjectByCode(code);
+
+      projectExperimentMapping.put(code, experiments);
     }
 
     return projectExperimentMapping;
