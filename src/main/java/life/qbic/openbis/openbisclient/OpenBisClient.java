@@ -739,6 +739,43 @@ public class OpenBisClient implements IOpenBisClient {
   /* ----- Sample / SampleType ---------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
   /**
+   * Get all Samples which are registered in the openBIS instance.
+   * @return List of openBIS v3 Sample
+   */
+  public List<Sample> listSamples() {
+    ensureLoggedIn();
+
+    try {
+      SearchResult<Sample> samples = v3.searchSamples(sessionToken, new SampleSearchCriteria(), fetchSamplesCompletely());
+      return samples.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch samples from openBIS. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("listSamples() returned null.");
+      return null;
+    }
+  }
+
+  /**
+   * Get all Samples which are available to the provided user in this openBIS instance
+   * @param user openBIS user name
+   * @return List with all available samples for specific openBIS user
+   */
+  public List<Sample> listSamplesForUser(String user) {
+    ensureLoggedIn(user);
+
+    try {
+      SearchResult<Sample> samples = v3.searchSamples(sessionToken, new SampleSearchCriteria(), fetchSamplesCompletely());
+      return samples.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error(String.format("Could not fetch samples of user %s. Does this user exist in openBIS?", user));
+      logger.warn("listSamplesForUser(String user) returned null.");
+      return null;
+    }
+  }
+
+  /**
    * Function to retrieve all samples of a given space
    *
    * @param spaceIdentifier identifier of the openBIS space
