@@ -383,7 +383,7 @@ public class OpenBisClient implements IOpenBisClient {
 
     } catch (UserFailureException ufe) {
       logger.error(String.format("Could not fetch projects of user %s. Does this user exist in openBIS?", user));
-      logger.warn("Returned empty list.");
+      logger.warn("listProjectsForUser(String user) returned null.");
       return null;
     }
   }
@@ -401,7 +401,7 @@ public class OpenBisClient implements IOpenBisClient {
       return projects.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch projects of space. Does the currently logged in user have sufficient permissions in openBIS? ");
+      logger.error("Could not fetch projects of space. Does the currently logged in user have sufficient permissions in openBIS?");
       logger.warn("getProjectsOfSpace(String space) returned null.");
       return null;
     }
