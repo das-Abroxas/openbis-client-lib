@@ -1087,12 +1087,25 @@ public class OpenBisClient implements IOpenBisClient {
   /**
    * List all datasets for given experiment identifiers
    *
-   * @param experimentIdentifiers list of experiment identifiers
+   * @param experimentCodes List of experiment codes
    * @return List of datasets
    */
   @Override
-  public List<DataSet> listDataSetsForExperiments(List<String> experimentIdentifiers) {
-    return null;
+  public List<DataSet> listDataSetsForExperiments(List<String> experimentCodes) {
+    ensureLoggedIn();
+
+    try {
+      DataSetSearchCriteria dsc = new DataSetSearchCriteria();
+      dsc.withExperiment().withCodes().thatIn( experimentCodes );
+
+      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      return datasets.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("listDataSetsForExperiments(List<String> experimentCodes) returned null.");
+      return null;
+    }
   }
 
   /**
