@@ -511,9 +511,16 @@ public class OpenBisClient implements IOpenBisClient {
   @Override
   public List<Experiment> listExperiments() {
     ensureLoggedIn();
-    SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken,
-        new ExperimentSearchCriteria(), fetchExperimentsCompletely());
-    return experiments.getObjects();
+
+    try {
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, new ExperimentSearchCriteria(), fetchExperimentsCompletely());
+      return experiments.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
+      logger.warn("listExperiments() returned null.");
+      return null;
+    }
   }
 
   /**
