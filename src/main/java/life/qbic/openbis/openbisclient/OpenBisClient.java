@@ -973,6 +973,43 @@ public class OpenBisClient implements IOpenBisClient {
   /* ----- DataSets --------------------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
   /**
+   * Get all DataSets which are registered in the openBIS instance.
+   * @return List of openBIS v3 DataSet
+   */
+  public List<DataSet> listDatasets() {
+    ensureLoggedIn();
+
+    try {
+      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      return datasets.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getSampleDatasets() returned null.");
+      return null;
+    }
+  }
+
+  /**
+   * Get all DataSets which are available to the provided user in this openBIS instance
+   * @param user openBIS user name
+   * @return List with all available datasets for specific openBIS user
+   */
+  public List<DataSet> listDatasetsForUser(String user) {
+    ensureLoggedIn(user);
+
+    try {
+      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      return datasets.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error(String.format("Could not fetch datasets of user %s. Does this user exist in openBIS?", user));
+      logger.warn("Returned empty list.");
+      return null;
+    }
+  }
+
+  /**
    * Function to list all datasets of a specific openBIS space
    *
    * @param spaceIdentifier identifier of the openBIS space
