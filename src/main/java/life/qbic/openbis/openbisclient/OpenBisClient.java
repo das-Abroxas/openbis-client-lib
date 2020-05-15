@@ -357,8 +357,16 @@ public class OpenBisClient implements IOpenBisClient {
   @Override
   public List<Project> listProjects() {
     ensureLoggedIn();
-    SearchResult<Project> projects = v3.searchProjects(sessionToken, new ProjectSearchCriteria(), fetchProjectsCompletely());
-    return projects.getObjects();
+
+    try {
+      SearchResult<Project> projects = v3.searchProjects(sessionToken, new ProjectSearchCriteria(), fetchProjectsCompletely());
+      return projects.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch projects from openBIS. Is currently logged in user admin?");
+      logger.warn("listProjects() returned null.");
+      return null;
+    }
   }
 
   /**
@@ -376,7 +384,7 @@ public class OpenBisClient implements IOpenBisClient {
     } catch (UserFailureException ufe) {
       logger.error(String.format("Could not fetch projects of user %s. Does this user exist in openBIS?", user));
       logger.warn("Returned empty list.");
-      return new ArrayList<>();
+      return null;
     }
   }
 
