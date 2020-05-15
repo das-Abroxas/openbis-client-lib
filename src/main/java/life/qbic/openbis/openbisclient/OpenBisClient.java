@@ -1187,18 +1187,20 @@ public class OpenBisClient implements IOpenBisClient {
    * Function to list all datasets of a specific sample (watch out there are different dataset
    * classes)
    *
-   * @param sampleCode code or identifier of the openBIS sample
+   * @param sampleCodeOrIdentifier code or identifier of the openBIS sample
    * @return list with all datasets of the given sample
    */
   @Override
-  public List<DataSet> getDataSetsOfSample(String sampleCode) {
+  public List<DataSet> getDataSetsOfSample(String sampleCodeOrIdentifier) {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria sc = new DataSetSearchCriteria();
-      sc.withSample().withCode().thatEquals(sampleCode);
+      DataSetSearchCriteria ssc = new DataSetSearchCriteria();
+      ssc.withOrOperator();
+      ssc.withSample().withCode().thatEquals(sampleCodeOrIdentifier);
+      ssc.withSample().withId().thatEquals( new SampleIdentifier(sampleCodeOrIdentifier) );
 
-      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, ssc, fetchDataSetsCompletely());
 
       return dataSets.getObjects();
 
@@ -1218,22 +1220,9 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public List<DataSet> getDataSetsOfSampleByIdentifier(String sampleIdentifier) {
-    ensureLoggedIn();
+    // ToDo: Can be removed from IOpenBisClient as getDataSetsOfSample(String) is sufficient
 
-    try {
-      DataSetSearchCriteria sc = new DataSetSearchCriteria();
-      sc.withOrOperator();
-      sc.withSample().withId().thatEquals(new SampleIdentifier(sampleIdentifier));
-
-      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
-
-      return dataSets.getObjects();
-
-    } catch (UserFailureException ufe) {
-      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getDataSetsOfSampleByIdentifier(String sampleIdentifier) returned null.");
-      return null;
-    }
+    return getDataSetsOfSample(sampleIdentifier);  // ensureLoggedIn() is called in getDataSetsOfSample
   }
 
   @Override
