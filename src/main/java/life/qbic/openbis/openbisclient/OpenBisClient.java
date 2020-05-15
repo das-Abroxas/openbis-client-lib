@@ -33,6 +33,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.Space;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.fetchoptions.SpaceFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.search.SpaceSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.Vocabulary;
+import ch.ethz.sis.openbis.generic.asapi.v3.exceptions.NotFetchedException;
 import ch.ethz.sis.openbis.generic.dssapi.v3.IDataStoreServerApi;
 import ch.systemsx.cisd.common.exceptions.NotImplementedException;
 import ch.systemsx.cisd.common.exceptions.UserFailureException;
@@ -431,15 +432,26 @@ public class OpenBisClient implements IOpenBisClient {
   @Override
   public Project getProjectOfExperimentByIdentifier(String experimentIdentifier) {
     ensureLoggedIn();
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withId().thatEquals(new ExperimentIdentifier(experimentIdentifier));
-    SearchResult<Experiment> experiments =
-            v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
 
-    if (experiments.getObjects().isEmpty()) {
+    try {
+      ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+      sc.withOrOperator();
+      sc.withCode().thatEquals(experimentIdentifier);
+      sc.withId().thatEquals(new ExperimentIdentifier(experimentIdentifier));
+
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+
+      return experiments.getObjects().isEmpty() ? null : experiments.getObjects().get(0).getProject();
+
+    } catch (NotFetchedException nfe) {
+      logger.error("Experiment has no fetched project.");
+      logger.warn("getProjectOfExperimentByIdentifier(String experimentIdentifier) returned null.");
       return null;
-    } else {
-      return experiments.getObjects().get(0).getProject();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch experiment. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getProjectOfExperimentByIdentifier(String experimentIdentifier) returned null.");
+      return null;
     }
   }
 
