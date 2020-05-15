@@ -592,15 +592,22 @@ public class OpenBisClient implements IOpenBisClient {
   @Override
   public List<Experiment> getExperimentsOfProjectByIdentifier(String projectIdentifier) {
     ensureLoggedIn();
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withOrOperator();
-    sc.withProject().withId().thatEquals(new ProjectIdentifier(projectIdentifier));
-    sc.withProject().withCode().thatEquals(projectIdentifier);
 
-    SearchResult<Experiment> experiments =
-            v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+    try {
+      ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+      sc.withOrOperator();
+      sc.withProject().withId().thatEquals(new ProjectIdentifier(projectIdentifier));
+      sc.withProject().withCode().thatEquals(projectIdentifier);
 
-    return experiments.getObjects();
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+
+      return experiments.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
+      logger.warn("getExperimentsOfProjectByIdentifier(String projectIdentifier) returned null.");
+      return null;
+    }
   }
 
   @Override
