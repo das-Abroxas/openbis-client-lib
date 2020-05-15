@@ -8,6 +8,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.fetchoptions.ProjectFetc
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleTypeFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.fetchoptions.SpaceFetchOptions;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.fetchoptions.VocabularyFetchOptions;
 
 public class OpenBisClientHelper {
 
@@ -118,6 +119,14 @@ public class OpenBisClientHelper {
     experimentTypeFetchOptions.withPropertyAssignments();
 
     return experimentTypeFetchOptions;
+  }
+
+  public static VocabularyFetchOptions fetchVocabularyCompletely() {
+    VocabularyFetchOptions vocabularyFetchOptions = new VocabularyFetchOptions();
+    vocabularyFetchOptions.withRegistrator();
+    vocabularyFetchOptions.withTerms();
+
+    return vocabularyFetchOptions;
   }
 
 }

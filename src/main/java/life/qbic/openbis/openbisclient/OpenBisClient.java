@@ -33,6 +33,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.Space;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.fetchoptions.SpaceFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.search.SpaceSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.Vocabulary;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.search.VocabularySearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.exceptions.NotFetchedException;
 import ch.ethz.sis.openbis.generic.dssapi.v3.IDataStoreServerApi;
 import ch.systemsx.cisd.common.exceptions.NotImplementedException;
@@ -1248,6 +1249,46 @@ public class OpenBisClient implements IOpenBisClient {
   /* ------------------------------------------------------------------------------------ */
   /* ----- Vocabulary / VocabularyTerm -------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
+  /**
+   * Get all vocabularies which are registered in the openBIS instance.
+   * @return List of openBIS v3 Vocabulary
+   */
+  public List<Vocabulary> listVocabulary() {
+    ensureLoggedIn();
+
+    try {
+      VocabularySearchCriteria vsc = new VocabularySearchCriteria();
+      SearchResult<Vocabulary> vocabularies = v3.searchVocabularies(sessionToken, vsc, fetchVocabularyCompletely());
+
+      return vocabularies.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch vocabularies. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("listVocabulary() returned null.");
+      return null;
+    }
+  }
+
+  /**
+   * Get all vocabularies which are registered in the openBIS instance.
+   * @return List of openBIS v3 Vocabulary
+   */
+  public List<Vocabulary> listVocabularyForUser(String user) {
+    ensureLoggedIn(user);
+
+    try {
+      VocabularySearchCriteria vsc = new VocabularySearchCriteria();
+      SearchResult<Vocabulary> vocabularies = v3.searchVocabularies(sessionToken, vsc, fetchVocabularyCompletely());
+
+      return vocabularies.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error(String.format("Could not fetch vocabularies of user %s. Does this user exist in openBIS?", user));
+      logger.warn("listVocabularyForUser(String user) returned null.");
+      return null;
+    }
+  }
+
   /**
    * Function to list the vocabulary terms for a given property which has been added to openBIS. The
    * property has to be a Controlled Vocabulary Property.
