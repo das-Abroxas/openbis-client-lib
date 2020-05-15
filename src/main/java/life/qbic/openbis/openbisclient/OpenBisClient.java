@@ -457,35 +457,45 @@ public class OpenBisClient implements IOpenBisClient {
 
   @Override
   public Project getProjectByIdentifier(String projectIdentifier) {
+    // ToDo: Same output as getProjectByCode(String projectCode). These methods should be merged.
     ensureLoggedIn();
-    ProjectSearchCriteria sc = new ProjectSearchCriteria();
-    sc.withOrOperator();
-    sc.withId().thatEquals(new ProjectIdentifier(projectIdentifier));
-    sc.withCode().thatEquals(projectIdentifier);
 
-    SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
+    try {
+      ProjectSearchCriteria sc = new ProjectSearchCriteria();
+      sc.withOrOperator();
+      sc.withId().thatEquals(new ProjectIdentifier(projectIdentifier));
+      sc.withCode().thatEquals(projectIdentifier);
 
-    if (projects.getObjects().isEmpty()) {
+      SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
+
+      return projects.getObjects().isEmpty() ? null : projects.getObjects().get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch project. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getProjectByIdentifier(String projectIdentifier) returned null.");
       return null;
-    } else {
-      return projects.getObjects().get(0);
     }
   }
 
   @Override
   public Project getProjectByCode(String projectCode) {
+    // ToDo: Same output as getProjectByIdentifier(String projectIdentifier). These methods should be merged.
     ensureLoggedIn();
-    ProjectSearchCriteria sc = new ProjectSearchCriteria();
-    sc.withOrOperator();
-    sc.withId().thatEquals(new ProjectIdentifier(projectCode));
-    sc.withCode().thatEquals(projectCode);
 
-    SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
+    try {
+      ProjectSearchCriteria sc = new ProjectSearchCriteria();
+      sc.withOrOperator();
+      sc.withCode().thatEquals(projectCode);
+      sc.withId().thatEquals(new ProjectIdentifier(projectCode));
 
-    if (projects.getObjects().isEmpty()) {
+      SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
+
+      return projects.getObjects().isEmpty() ? null : projects.getObjects().get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch project. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getProjectByIdentifier(String projectIdentifier) returned null.");
       return null;
-    } else {
-      return projects.getObjects().get(0);
     }
   }
 
