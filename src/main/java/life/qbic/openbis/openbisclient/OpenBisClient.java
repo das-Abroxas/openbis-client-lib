@@ -735,7 +735,41 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
 
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Sample / SampleType ---------------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
+  /**
+   * Function to retrieve all samples of a given space
+   *
+   * @param spaceIdentifier identifier of the openBIS space
+   * @return list with all samples of the given space
+   */
+  @Override
+  public List<Sample> getSamplesofSpace(String spaceIdentifier) {
+    ensureLoggedIn();
+    SampleSearchCriteria sampleSearchCriteria = new SampleSearchCriteria();
+    sampleSearchCriteria.withSpace().withCode().thatEquals(spaceIdentifier);
 
+    SearchResult<Sample> samplesOfExperiment =
+            v3.searchSamples(sessionToken, sampleSearchCriteria, fetchSamplesCompletely());
+    return samplesOfExperiment.getObjects();
+
+  }
+
+  @Override
+  public List<Sample> getSamplesOfProject(String projIdentifier) {
+    ensureLoggedIn();
+    SampleSearchCriteria sampleSearchCriteria = new SampleSearchCriteria();
+    sampleSearchCriteria.withOrOperator();
+    sampleSearchCriteria.withExperiment().withProject().withCode().thatEquals(projIdentifier);
+    sampleSearchCriteria.withExperiment().withProject().withId()
+            .thatEquals(new ProjectIdentifier(projIdentifier));
+
+    SearchResult<Sample> samples =
+            v3.searchSamples(sessionToken, sampleSearchCriteria, fetchSamplesCompletely());
+
+    return samples.getObjects();
+  }
 
   /**
    * Function to retrieve all samples of a given experiment Note: seems to throw a
@@ -758,24 +792,6 @@ public class OpenBisClient implements IOpenBisClient {
 
   }
 
-  /**
-   * Function to retrieve all samples of a given space
-   *
-   * @param spaceIdentifier identifier of the openBIS space
-   * @return list with all samples of the given space
-   */
-  @Override
-  public List<Sample> getSamplesofSpace(String spaceIdentifier) {
-    ensureLoggedIn();
-    SampleSearchCriteria sampleSearchCriteria = new SampleSearchCriteria();
-    sampleSearchCriteria.withSpace().withCode().thatEquals(spaceIdentifier);
-
-    SearchResult<Sample> samplesOfExperiment =
-        v3.searchSamples(sessionToken, sampleSearchCriteria, fetchSamplesCompletely());
-    return samplesOfExperiment.getObjects();
-
-  }
-
   @Override
   public Sample getSampleByIdentifier(String sampleIdentifier) {
     ensureLoggedIn();
@@ -790,21 +806,6 @@ public class OpenBisClient implements IOpenBisClient {
     } else {
       return samples.getObjects().get(0);
     }
-  }
-
-  @Override
-  public List<Sample> getSamplesOfProject(String projIdentifier) {
-    ensureLoggedIn();
-    SampleSearchCriteria sampleSearchCriteria = new SampleSearchCriteria();
-    sampleSearchCriteria.withOrOperator();
-    sampleSearchCriteria.withExperiment().withProject().withCode().thatEquals(projIdentifier);
-    sampleSearchCriteria.withExperiment().withProject().withId()
-        .thatEquals(new ProjectIdentifier(projIdentifier));
-
-    SearchResult<Sample> samples =
-        v3.searchSamples(sessionToken, sampleSearchCriteria, fetchSamplesCompletely());
-
-    return samples.getObjects();
   }
 
   /**
@@ -839,6 +840,44 @@ public class OpenBisClient implements IOpenBisClient {
         v3.searchSamples(sessionToken, sampleSearchCriteria, fetchSamplesCompletely());
     return samples.getObjects();
   }
+
+  @Override
+  public SampleType getSampleTypeByString(String sampleType) {
+    SampleTypeSearchCriteria sc = new SampleTypeSearchCriteria();
+    sc.withCode().thatEquals(sampleType);
+
+    SearchResult<SampleType> sampleTypes =
+            v3.searchSampleTypes(sessionToken, sc, fetchSampleTypesCompletely());
+
+    if (sampleTypes.getObjects().isEmpty()) {
+      return null;
+    } else {
+      return sampleTypes.getObjects().get(0);
+    }
+
+  }
+
+  /**
+   * Function to retrieve a map with sample type code as key and the sample type object as value
+   *
+   * @return map with sample types
+   */
+  @Override
+  public Map<String, SampleType> getSampleTypes() {
+    SearchResult<SampleType> sampleTypes = v3.searchSampleTypes(sessionToken,
+            new SampleTypeSearchCriteria(), fetchSampleTypesCompletely());
+
+    Map<String, SampleType> types = new HashMap<>();
+    for (SampleType t : sampleTypes.getObjects()) {
+      types.put(t.getCode(), t);
+    }
+
+    return types;
+
+  }
+
+
+
 
   /**
    * Function to list all datasets of a specific sample (watch out there are different dataset
@@ -1001,41 +1040,6 @@ public class OpenBisClient implements IOpenBisClient {
   @Override
   public String getCVLabelForProperty(PropertyType propertyType, String propertyValue) {
     return null;
-  }
-
-  @Override
-  public SampleType getSampleTypeByString(String sampleType) {
-    SampleTypeSearchCriteria sc = new SampleTypeSearchCriteria();
-    sc.withCode().thatEquals(sampleType);
-
-    SearchResult<SampleType> sampleTypes =
-        v3.searchSampleTypes(sessionToken, sc, fetchSampleTypesCompletely());
-
-    if (sampleTypes.getObjects().isEmpty()) {
-      return null;
-    } else {
-      return sampleTypes.getObjects().get(0);
-    }
-
-  }
-
-  /**
-   * Function to retrieve a map with sample type code as key and the sample type object as value
-   *
-   * @return map with sample types
-   */
-  @Override
-  public Map<String, SampleType> getSampleTypes() {
-    SearchResult<SampleType> sampleTypes = v3.searchSampleTypes(sessionToken,
-        new SampleTypeSearchCriteria(), fetchSampleTypesCompletely());
-
-    Map<String, SampleType> types = new HashMap<>();
-    for (SampleType t : sampleTypes.getObjects()) {
-      types.put(t.getCode(), t);
-    }
-
-    return types;
-
   }
 
   /**
