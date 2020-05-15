@@ -1289,6 +1289,25 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  @Override
+  public Vocabulary getVocabulary(String vocabularyCode) {
+    ensureLoggedIn();
+
+    try {
+      VocabularySearchCriteria vsc = new VocabularySearchCriteria();
+      vsc.withCode().thatEquals(vocabularyCode);
+
+      SearchResult<Vocabulary> vocabulary = v3.searchVocabularies(sessionToken, vsc, fetchVocabularyCompletely());
+
+      return vocabulary.getObjects().isEmpty() ? null : vocabulary.getObjects().get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch vocabularies. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getVocabulary(String vocabularyCode) returned null.");
+      return null;
+    }
+  }
+
   /**
    * Function to list the vocabulary terms for a given property which has been added to openBIS. The
    * property has to be a Controlled Vocabulary Property.
@@ -1309,11 +1328,6 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public Map<String, String> getVocabCodesAndLabelsForVocab(String vocabularyCode) {
-    return null;
-  }
-
-  @Override
-  public Vocabulary getVocabulary(String vocabularyCode) {
     return null;
   }
 
