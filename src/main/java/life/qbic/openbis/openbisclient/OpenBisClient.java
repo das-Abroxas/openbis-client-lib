@@ -1079,7 +1079,7 @@ public class OpenBisClient implements IOpenBisClient {
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getDataSetsOfProjects(List<Project> projects) returned null.");
+      logger.warn("getDataSetsOfProjectByIdentifier(String projectIdentifier) returned null.");
       return null;
     }
   }
