@@ -591,36 +591,16 @@ public class OpenBisClient implements IOpenBisClient {
 
   @Override
   public List<Experiment> getExperimentsOfProjectByIdentifier(String projectIdentifier) {
-    ensureLoggedIn();
+    // ToDo: Can be removed from IOpenBisClient as getExperimentsForProject(String) is sufficient
 
-    try {
-      ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-      sc.withOrOperator();
-      sc.withProject().withId().thatEquals(new ProjectIdentifier(projectIdentifier));
-      sc.withProject().withCode().thatEquals(projectIdentifier);
-
-      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
-
-      return experiments.getObjects();
-
-    } catch (UserFailureException ufe) {
-      logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
-      logger.warn("getExperimentsOfProjectByIdentifier(String projectIdentifier) returned null.");
-      return null;
-    }
+    return getExperimentsForProject(projectIdentifier);  // ensureLoggedIn() is called in getExperimentsForProject
   }
 
   @Override
   public List<Experiment> getExperimentsOfProjectByCode(String projectCode) {
-    // TODO Could be combined with getExperimentsOfProjectByIdentifier
-    ensureLoggedIn();
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withProject().withCode().thatEquals(projectCode);
+    // ToDo: Can be removed from IOpenBisClient as getExperimentsForProject(String) is sufficient
 
-    SearchResult<Experiment> experiments =
-            v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
-
-    return experiments.getObjects();
+    return getExperimentsForProject(projectCode);  // ensureLoggedIn() is called in getExperimentsForProject
   }
 
   /**
@@ -653,8 +633,7 @@ public class OpenBisClient implements IOpenBisClient {
    * Function to list all Experiments for a specific project which are registered in the openBIS
    * instance.
    *
-   * @param projectIdentifier project identifer as defined by openbis, for which the experiments
-   *        should be listed
+   * @param projectCodeOrIdentifier Project code or identifer as defined by openBIS.
    * @return list with all experiments registered in this openBIS instance
    */
   @Override
