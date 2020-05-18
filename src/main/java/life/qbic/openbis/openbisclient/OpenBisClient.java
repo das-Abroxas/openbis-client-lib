@@ -1469,7 +1469,7 @@ public class OpenBisClient implements IOpenBisClient {
   /* ------------------------------------------------------------------------------------ */
   @Override
   public boolean spaceExists(String spaceCode) {
-    return listSpaces().contains(spaceCode);
+    return listSpaces().contains(spaceCode);  // ensureLoggedIn is called in listSpaces()
   }
 
   @Override
