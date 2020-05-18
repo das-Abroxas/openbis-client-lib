@@ -37,6 +37,8 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.id.SampleIdentifier;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.id.SamplePermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleTypeSearchCriteria;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.service.CustomASServiceExecutionOptions;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.service.id.CustomASServiceCode;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.Space;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.create.SpaceCreation;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.fetchoptions.SpaceFetchOptions;
@@ -1978,7 +1980,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
 
-
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Misc ------------------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
   /**
    * Returns all users of a Space.
    *
@@ -2000,7 +2004,25 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public String triggerIngestionService(String serviceName, Map<String, Object> parameters) {
-    return null;
+    ensureLoggedIn();
+
+    try {
+      CustomASServiceCode cassc = new CustomASServiceCode(serviceName);                // openBIS object for custom service code
+      CustomASServiceExecutionOptions casseo = new CustomASServiceExecutionOptions();  // openBIS object for service parameter
+
+      for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+        casseo.withParameter(entry.getKey(), entry.getValue());
+      }
+
+      Object result = v3.executeCustomASService(sessionToken, cassc, casseo);
+
+      return result.toString();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not execute custom as service. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("triggerIngestionService(String serviceName, Map<String, Object> parameters) returned null.");
+      return null;
+    }
   }
 
   @Override
