@@ -1466,6 +1466,42 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
 
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Exists Methods --------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
+  @Override
+  public boolean spaceExists(String spaceCode) {
+    return listSpaces().contains(spaceCode);
+  }
+
+  @Override
+  public boolean projectExists(String spaceCode, String projectCode) {
+    // TODO why do we need the space code here? Then the method should be named differently
+    ProjectSearchCriteria sc = new ProjectSearchCriteria();
+    sc.withSpace().withCode().thatEquals(spaceCode);
+    sc.withCode().thatEquals(projectCode);
+    SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, new ProjectFetchOptions());
+
+    return projectCode != null && projects.getTotalCount() != 0;
+  }
+
+  @Override
+  public boolean expExists(String spaceCode, String projectCode, String experimentCode) {
+    // TODO why do we need the space code here? Then the method should be named differently
+    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+    sc.withProject().withSpace().withCode().thatEquals(spaceCode);
+    sc.withCode().thatEquals(experimentCode);
+    sc.withProject().withCode().thatEquals(projectCode);
+    SearchResult<Experiment> experiments =
+            v3.searchExperiments(sessionToken, sc, new ExperimentFetchOptions());
+    return experiments.getTotalCount() != 0;
+  }
+
+  @Override
+  public boolean sampleExists(String sampleCode) {
+    return searchSampleByCode(sampleCode).size() > 0;
+  }
+
 
 
   /**
@@ -1591,39 +1627,6 @@ public class OpenBisClient implements IOpenBisClient {
   public List<Sample> getChildrenSamples(Sample sample) {
     // TODO unnecessary method in v3 api
     return sample.getChildren();
-  }
-
-  @Override
-  public boolean spaceExists(String spaceCode) {
-    return listSpaces().contains(spaceCode);
-  }
-
-  @Override
-  public boolean projectExists(String spaceCode, String projectCode) {
-    // TODO why do we need the space code here? Then the method should be named differently
-    ProjectSearchCriteria sc = new ProjectSearchCriteria();
-    sc.withSpace().withCode().thatEquals(spaceCode);
-    sc.withCode().thatEquals(projectCode);
-    SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, new ProjectFetchOptions());
-
-    return projectCode != null && projects.getTotalCount() != 0;
-  }
-
-  @Override
-  public boolean expExists(String spaceCode, String projectCode, String experimentCode) {
-    // TODO why do we need the space code here? Then the method should be named differently
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withProject().withSpace().withCode().thatEquals(spaceCode);
-    sc.withCode().thatEquals(experimentCode);
-    sc.withProject().withCode().thatEquals(projectCode);
-    SearchResult<Experiment> experiments =
-        v3.searchExperiments(sessionToken, sc, new ExperimentFetchOptions());
-    return experiments.getTotalCount() != 0;
-  }
-
-  @Override
-  public boolean sampleExists(String sampleCode) {
-    return searchSampleByCode(sampleCode).size() > 0;
   }
 
   @Override
