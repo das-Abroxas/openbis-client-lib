@@ -7,10 +7,13 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.attachment.Attachment;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search.SearchResult;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.DataSet;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.search.DataSetSearchCriteria;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.entitytype.id.EntityTypePermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.Experiment;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.ExperimentType;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.create.ExperimentCreation;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.fetchoptions.ExperimentFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.id.ExperimentIdentifier;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.id.ExperimentPermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.search.ExperimentSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.search.ExperimentTypeSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.person.Person;
@@ -1664,6 +1667,141 @@ public class OpenBisClient implements IOpenBisClient {
     } catch (UserFailureException ufe) {
       logger.error("Could not create projects. Has the currently logged in user sufficient permissions in openBIS?");
       logger.warn("createProjects(List<ProjectCreation>) returned null.");
+      return null;
+    }
+  }
+
+
+  public ExperimentCreation prepareExperimentCreation(String code) {
+    ExperimentCreation experiment = new ExperimentCreation();
+    experiment.setCode(code);
+
+    return experiment;
+  }
+
+  public ExperimentCreation prepareExperimentCreation(String code, Map<String, String> properties) {
+    ExperimentCreation experiment = new ExperimentCreation();
+    experiment.setCode(code);
+    experiment.setProperties(properties);
+
+    return experiment;
+  }
+
+  public ExperimentCreation prepareExperimentCreation(String code, String type, Map<String, String> properties) {
+    ExperimentCreation experiment = new ExperimentCreation();
+    experiment.setCode(code);
+    experiment.setTypeId( new EntityTypePermId(type) );
+    experiment.setProperties(properties);
+
+    return experiment;
+  }
+
+  public ExperimentCreation prepareExperimentCreation(String code, String type, String projectIdentifier,
+                                                      Map<String, String> properties) {
+    ExperimentCreation experiment = new ExperimentCreation();
+    experiment.setCode(code);
+    experiment.setTypeId( new EntityTypePermId(type) );
+    experiment.setProjectId( new ProjectIdentifier(projectIdentifier) );
+    experiment.setProperties(properties);
+
+    return experiment;
+  }
+
+  public ExperimentCreation prepareExperimentCreation(String code, String type, String space, String project,
+                                                      Map<String, String> properties) {
+    ExperimentCreation experiment = new ExperimentCreation();
+    experiment.setCode(code);
+    experiment.setTypeId( new EntityTypePermId(type) );
+    experiment.setProjectId( new ProjectIdentifier(space, project) );
+    experiment.setProperties(properties);
+
+    return experiment;
+  }
+
+  public ExperimentPermId createExperiment(String code) {
+    ensureLoggedIn();
+
+    try {
+      ExperimentCreation experiment = prepareExperimentCreation(code);
+
+      return v3.createExperiments(sessionToken, Arrays.asList(experiment)).get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create experiment. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("createExperiment(String experimentCode, Map<String, String> properties) returned null.");
+      return null;
+    }
+  }
+
+  public ExperimentPermId createExperiment(String code, Map<String, String> properties) {
+    ensureLoggedIn();
+
+    try {
+      ExperimentCreation experiment = prepareExperimentCreation(code, properties);
+
+      return v3.createExperiments(sessionToken, Arrays.asList(experiment)).get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create experiment. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("createExperiment(String experimentCode, Map<String, String> properties) returned null.");
+      return null;
+    }
+  }
+
+  public ExperimentPermId createExperiment(String code, String type, Map<String, String> properties) {
+    ensureLoggedIn();
+
+    try {
+      ExperimentCreation experiment = prepareExperimentCreation(code, type, properties);
+
+      return v3.createExperiments(sessionToken, Arrays.asList(experiment)).get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create experiment. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("createExperiment(String experimentCode, Map<String, String> properties) returned null.");
+      return null;
+    }
+  }
+
+  public ExperimentPermId createExperiment(String code, String type, String projectIdentifier, Map<String, String> properties) {
+    ensureLoggedIn();
+
+    try {
+      ExperimentCreation experiment = prepareExperimentCreation(code, type, projectIdentifier, properties);
+
+      return v3.createExperiments(sessionToken, Arrays.asList(experiment)).get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create experiment. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("createExperiment(String experimentCode, Map<String, String> properties) returned null.");
+      return null;
+    }
+  }
+
+  public ExperimentPermId createExperiment(String code, String type, String space, String project, Map<String, String> properties) {
+    ensureLoggedIn();
+
+    try {
+      ExperimentCreation experiment = prepareExperimentCreation(code, type, space, project, properties);
+
+      return v3.createExperiments(sessionToken, Arrays.asList(experiment)).get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create experiment. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("createExperiment(String experimentCode, Map<String, String> properties) returned null.");
+      return null;
+    }
+  }
+
+  public List<ExperimentPermId> createExperiments(List<ExperimentCreation> experiments) {
+    ensureLoggedIn();
+
+    try {
+      return v3.createExperiments(sessionToken, experiments);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create experiments. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("createExperiment(List<ExperimentCreation>) returned null.");
       return null;
     }
   }
