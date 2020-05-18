@@ -459,8 +459,6 @@ public class OpenBisClient implements IOpenBisClient {
   public Project getProject(String projectCodeOrIdentifier) {
     ensureLoggedIn();
 
-    ensureLoggedIn();
-
     try {
       ProjectSearchCriteria sc = new ProjectSearchCriteria();
       sc.withOrOperator();
