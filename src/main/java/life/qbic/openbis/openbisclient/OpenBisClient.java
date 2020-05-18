@@ -1354,7 +1354,35 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public Map<String, String> getVocabCodesAndLabelsForVocab(String vocabularyCode) {
-    return null;
+    ensureLoggedIn();
+
+    VocabularySearchCriteria vsc = new VocabularySearchCriteria();
+    vsc.withCode().thatEquals(vocabularyCode);
+
+    try {
+      Map<String, String> codesAndLabels = new HashMap<>();
+      SearchResult<Vocabulary> vocabularies = v3.searchVocabularies(sessionToken,vsc, fetchVocabularyCompletely());
+
+      if (vocabularies.getObjects().isEmpty()) { return codesAndLabels; }
+
+      Vocabulary vocabulary = vocabularies.getObjects().get(0);
+      try {
+          for (VocabularyTerm vt : vocabulary.getTerms()) {
+            codesAndLabels.put( vt.getLabel(), vt.getCode() );  // Note: Why first label and then code?
+            // codesAndLabels.put( vt.getCode(), vt.getLabel() );
+          }
+          return codesAndLabels;
+
+      } catch (NotFetchedException nfe) {
+        logger.warn(String.format("Vocabulary %s has no fetched vocabulary terms. Returning empty map.", vocabulary.getCode()));
+        return codesAndLabels;
+      }
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch vocabulary. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getVocabCodesAndLabelsForVocab(String vocabularyCode) returned null.");
+      return null;
+    }
   }
 
   /**
