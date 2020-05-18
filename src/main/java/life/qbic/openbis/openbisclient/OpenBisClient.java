@@ -1358,11 +1358,11 @@ public class OpenBisClient implements IOpenBisClient {
   public Map<String, String> getVocabCodesAndLabelsForVocab(String vocabularyCode) {
     ensureLoggedIn();
 
-    VocabularySearchCriteria vsc = new VocabularySearchCriteria();
-    vsc.withCode().thatEquals(vocabularyCode);
-
     try {
       Map<String, String> codesAndLabels = new HashMap<>();
+      VocabularySearchCriteria vsc = new VocabularySearchCriteria();
+      vsc.withCode().thatEquals(vocabularyCode);
+
       SearchResult<Vocabulary> vocabularies = v3.searchVocabularies(sessionToken,vsc, fetchVocabularyCompletely());
 
       if (vocabularies.getObjects().isEmpty()) { return codesAndLabels; }
@@ -1396,12 +1396,14 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public List<String> getVocabCodesForVocab(String vocabularyCode) {
-    VocabularySearchCriteria vsc = new VocabularySearchCriteria();
-    vsc.withCode().thatEquals(vocabularyCode);
+    ensureLoggedIn();
 
     try {
       List<String> vocabCodes = new ArrayList<>();
-      SearchResult<Vocabulary> vocabularies = v3.searchVocabularies(sessionToken,vsc, fetchVocabularyCompletely());
+      VocabularySearchCriteria vsc = new VocabularySearchCriteria();
+      vsc.withCode().thatEquals(vocabularyCode);
+
+      SearchResult<Vocabulary> vocabularies = v3.searchVocabularies(sessionToken, vsc, fetchVocabularyCompletely());
 
       if (vocabularies.getObjects().isEmpty()) { return vocabCodes; }
 
