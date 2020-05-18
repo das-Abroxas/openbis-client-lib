@@ -1514,8 +1514,10 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   @Override
-  public boolean sampleExists(String sampleCode) {
-    return searchSampleByCode(sampleCode).size() > 0;
+  public boolean sampleExists(String sampleCodeOrIdentifier) {
+    Sample sample = getSample(sampleCodeOrIdentifier);
+
+    return sampleCodeOrIdentifier != null && sample != null;  // ensureLoggedIn() is called in getSample
   }
 
 
