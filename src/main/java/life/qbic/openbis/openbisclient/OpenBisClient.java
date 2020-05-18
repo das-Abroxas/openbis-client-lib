@@ -16,8 +16,10 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.search.ExperimentType
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.person.Person;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.person.search.PersonSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.Project;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.create.ProjectCreation;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.fetchoptions.ProjectFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.id.ProjectIdentifier;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.id.ProjectPermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.search.ProjectSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.PropertyType;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.search.PropertyTypeSearchCriteria;
@@ -1579,6 +1581,89 @@ public class OpenBisClient implements IOpenBisClient {
     } catch (UserFailureException ufe) {
       logger.error("Could not create space. Has the currently logged in user sufficient permissions in openBIS?");
       logger.warn("createSpace(String spaceCode, String description) returned null.");
+      return null;
+    }
+  }
+
+
+  public ProjectCreation prepareProjectCreation(String code) {
+    ProjectCreation project = new ProjectCreation();
+    project.setCode(code);
+
+    return project;
+  }
+
+  public ProjectCreation prepareProjectCreation(String code, String space) {
+    ProjectCreation project = new ProjectCreation();
+    project.setCode(code);
+    project.setSpaceId( new SpacePermId(space) );
+
+    return project;
+  }
+
+  public ProjectCreation prepareProjectCreation(String code, String space, String description) {
+    ProjectCreation project = new ProjectCreation();
+    project.setCode(code);
+    project.setDescription(description);
+    project.setSpaceId( new SpacePermId(space) );
+
+    return project;
+  }
+
+  public ProjectPermId createProject(String code) {
+    ensureLoggedIn();
+
+    try {
+      ProjectCreation project = prepareProjectCreation(code);
+
+      return v3.createProjects(sessionToken, Arrays.asList(project)).get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create project. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("createProject(String code, String space) returned null.");
+      return null;
+    }
+  }
+
+  public ProjectPermId createProject(String code, String space) {
+    ensureLoggedIn();
+
+    try {
+      ProjectCreation project = prepareProjectCreation(code, space);
+
+      return v3.createProjects(sessionToken, Arrays.asList(project)).get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create project. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("createProject(String code, String space) returned null.");
+      return null;
+    }
+  }
+
+  public ProjectPermId createProject(String code, String space, String description) {
+    ensureLoggedIn();
+
+    try {
+      ProjectCreation project = prepareProjectCreation(code, space, description);
+
+      return v3.createProjects(sessionToken, Arrays.asList(project)).get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create project. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("createProject(String code, String space, String description) returned null.");
+      return null;
+    }
+  }
+
+  public List<ProjectPermId> createProjects(List<ProjectCreation> projects) {
+    ensureLoggedIn();
+
+    try {
+      return v3.createProjects(sessionToken, projects);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create projects. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("createProjects(List<ProjectCreation>) returned null.");
       return null;
     }
   }
