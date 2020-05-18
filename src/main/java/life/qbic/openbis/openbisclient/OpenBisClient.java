@@ -1625,7 +1625,7 @@ public class OpenBisClient implements IOpenBisClient {
 
     } catch (UserFailureException ufe) {
       logger.error("Could not create project. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createProject(String code, String space) returned null.");
+      logger.warn("createProject(String code) returned null.");
       return null;
     }
   }
@@ -1730,7 +1730,7 @@ public class OpenBisClient implements IOpenBisClient {
 
     } catch (UserFailureException ufe) {
       logger.error("Could not create experiment. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createExperiment(String experimentCode, Map<String, String> properties) returned null.");
+      logger.warn("createExperiment(String experimentCode) returned null.");
       return null;
     }
   }
@@ -1760,7 +1760,7 @@ public class OpenBisClient implements IOpenBisClient {
 
     } catch (UserFailureException ufe) {
       logger.error("Could not create experiment. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createExperiment(String experimentCode, Map<String, String> properties) returned null.");
+      logger.warn("createExperiment(String experimentCode, String type, Map<String, String> properties) returned null.");
       return null;
     }
   }
@@ -1775,7 +1775,8 @@ public class OpenBisClient implements IOpenBisClient {
 
     } catch (UserFailureException ufe) {
       logger.error("Could not create experiment. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createExperiment(String experimentCode, Map<String, String> properties) returned null.");
+      logger.warn("createExperiment(String code, String type, String projectIdentifier, " +
+                  "Map<String, String> properties) returned null.");
       return null;
     }
   }
@@ -1790,7 +1791,8 @@ public class OpenBisClient implements IOpenBisClient {
 
     } catch (UserFailureException ufe) {
       logger.error("Could not create experiment. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createExperiment(String experimentCode, Map<String, String> properties) returned null.");
+      logger.warn("createExperiment(String code, String type, String space, String project, " +
+                  "Map<String, String> properties) returned null.");
       return null;
     }
   }
@@ -1807,6 +1809,7 @@ public class OpenBisClient implements IOpenBisClient {
       return null;
     }
   }
+
 
   public SampleCreation prepareSampleCreation(String code) {
     SampleCreation sample = new SampleCreation();
@@ -1906,7 +1909,7 @@ public class OpenBisClient implements IOpenBisClient {
 
     } catch (UserFailureException ufe) {
       logger.error("Could not create sample. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createSample(String sampleCode, Map<String, String> properties) returned null.");
+      logger.warn("createSample(String code, String type, Map<String, String> properties) returned null.");
       return null;
     }
   }
@@ -1921,7 +1924,8 @@ public class OpenBisClient implements IOpenBisClient {
 
     } catch (UserFailureException ufe) {
       logger.error("Could not create sample. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createSample(String sampleCode, Map<String, String> properties) returned null.");
+      logger.warn("createSample(String code, String type, String experimentIdentifier, " +
+                  "Map<String, String> properties) returned null.");
       return null;
     }
   }
@@ -1938,7 +1942,7 @@ public class OpenBisClient implements IOpenBisClient {
     } catch (UserFailureException ufe) {
       logger.error("Could not create sample. Has the currently logged in user sufficient permissions in openBIS?");
       logger.warn("createSample(String sampleCode, String type, String space, String project, " +
-              "String experiment, Map<String, String> properties) returned null.");
+                  "String experiment, Map<String, String> properties) returned null.");
       return null;
     }
   }
@@ -1955,7 +1959,7 @@ public class OpenBisClient implements IOpenBisClient {
     } catch (UserFailureException ufe) {
       logger.error("Could not create sample. Has the currently logged in user sufficient permissions in openBIS?");
       logger.warn("createSample(String sampleCode, String type, String space, String project, " +
-              "String experiment, List<SampleIdentifier> parents, Map<String, String> properties) returned null.");
+                  "String experiment, List<SampleIdentifier> parents, Map<String, String> properties) returned null.");
       return null;
     }
   }
