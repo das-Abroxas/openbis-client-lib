@@ -31,7 +31,9 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.id.SampleIdentifier;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleTypeSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.Space;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.create.SpaceCreation;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.fetchoptions.SpaceFetchOptions;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.id.SpacePermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.search.SpaceSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.Vocabulary;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.VocabularyTerm;
@@ -1530,6 +1532,55 @@ public class OpenBisClient implements IOpenBisClient {
     Sample sample = getSample(sampleCodeOrIdentifier);
 
     return sampleCodeOrIdentifier != null && sample != null;  // ensureLoggedIn() is called in getSample
+  }
+
+
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Entity creation -------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
+  public SpaceCreation prepareSpaceCreation(String code) {
+    SpaceCreation space = new SpaceCreation();
+    space.setCode(code);
+
+    return space;
+  }
+
+  public SpaceCreation prepareSpaceCreation(String code, String description) {
+    SpaceCreation space = new SpaceCreation();
+    space.setCode(code);
+    space.setDescription(description);
+
+    return space;
+  }
+
+  public SpacePermId createSpace(String code) {
+    ensureLoggedIn();
+
+    try {
+      SpaceCreation space = prepareSpaceCreation(code);
+
+      return v3.createSpaces(sessionToken, Arrays.asList(space)).get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create space. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("createSpace(String spaceCode) returned null.");
+      return null;
+    }
+  }
+
+  public SpacePermId createSpace(String code, String description) {
+    ensureLoggedIn();
+
+    try {
+      SpaceCreation space = prepareSpaceCreation(code, description);
+
+      return v3.createSpaces(sessionToken, Arrays.asList(space)).get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create space. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("createSpace(String spaceCode, String description) returned null.");
+      return null;
+    }
   }
 
 
