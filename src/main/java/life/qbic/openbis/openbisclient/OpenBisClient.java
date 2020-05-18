@@ -1492,6 +1492,12 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  public boolean projectExists(String projectCodeOrIdentifier) {
+    Project project = getProject(projectCodeOrIdentifier);
+
+    return projectCodeOrIdentifier != null && project != null;
+  }
+
   @Override
   public boolean expExists(String spaceCode, String projectCode, String experimentCode) {
     ensureLoggedIn();
@@ -1511,6 +1517,12 @@ public class OpenBisClient implements IOpenBisClient {
       logger.warn("expExists(String spaceCode, String projectCode, String experimentCode) returned false.");
       return false;
     }
+  }
+
+  public boolean experimentExists(String experimentCodeOrIdentifier) {
+    Experiment experiment = getExperiment(experimentCodeOrIdentifier);
+
+    return experimentCodeOrIdentifier != null && experiment != null;
   }
 
   @Override
