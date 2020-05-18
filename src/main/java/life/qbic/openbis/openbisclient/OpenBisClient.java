@@ -1494,14 +1494,23 @@ public class OpenBisClient implements IOpenBisClient {
 
   @Override
   public boolean expExists(String spaceCode, String projectCode, String experimentCode) {
-    // TODO why do we need the space code here? Then the method should be named differently
-    ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-    sc.withProject().withSpace().withCode().thatEquals(spaceCode);
-    sc.withCode().thatEquals(experimentCode);
-    sc.withProject().withCode().thatEquals(projectCode);
-    SearchResult<Experiment> experiments =
-            v3.searchExperiments(sessionToken, sc, new ExperimentFetchOptions());
-    return experiments.getTotalCount() != 0;
+    ensureLoggedIn();
+
+    try {
+      ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
+      sc.withProject().withSpace().withCode().thatEquals(spaceCode);
+      sc.withProject().withCode().thatEquals(projectCode);
+      sc.withCode().thatEquals(experimentCode);
+
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, sc, new ExperimentFetchOptions());
+
+      return spaceCode != null && projectCode != null && experimentCode != null && experiments.getTotalCount() != 0;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch experiments. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("expExists(String spaceCode, String projectCode, String experimentCode) returned false.");
+      return false;
+    }
   }
 
   @Override
