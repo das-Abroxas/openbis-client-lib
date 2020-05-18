@@ -5,6 +5,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.fetchoptions.Experime
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.fetchoptions.ExperimentTypeFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.person.fetchoptions.PersonFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.fetchoptions.ProjectFetchOptions;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.fetchoptions.PropertyTypeFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleTypeFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.fetchoptions.SpaceFetchOptions;
@@ -127,6 +128,23 @@ public class OpenBisClientHelper {
     vocabularyFetchOptions.withTerms();
 
     return vocabularyFetchOptions;
+  }
+
+  public static PropertyTypeFetchOptions fetchPropertyTypeCompletely() {
+    PropertyTypeFetchOptions propertyTypeFetchOptions = new PropertyTypeFetchOptions();
+    propertyTypeFetchOptions.withVocabulary();
+    propertyTypeFetchOptions.withSemanticAnnotations();
+    propertyTypeFetchOptions.withMaterialType();
+    propertyTypeFetchOptions.withRegistrator();
+
+    return propertyTypeFetchOptions;
+  }
+
+  public static PropertyTypeFetchOptions fetchPropertyTypeWithVocabularyAndTerms() {
+    PropertyTypeFetchOptions propertyTypeFetchOptions = new PropertyTypeFetchOptions();
+    propertyTypeFetchOptions.withVocabularyUsing(fetchVocabularyCompletely());
+
+    return propertyTypeFetchOptions;
   }
 
 }

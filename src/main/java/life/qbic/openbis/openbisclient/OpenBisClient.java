@@ -20,6 +20,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.fetchoptions.ProjectFetc
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.id.ProjectIdentifier;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.search.ProjectSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.PropertyType;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.search.PropertyTypeSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.roleassignment.Role;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.roleassignment.RoleAssignment;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.roleassignment.RoleLevel;
@@ -33,6 +34,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.Space;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.fetchoptions.SpaceFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.search.SpaceSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.Vocabulary;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.VocabularyTerm;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.search.VocabularySearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.exceptions.NotFetchedException;
 import ch.ethz.sis.openbis.generic.dssapi.v3.IDataStoreServerApi;
@@ -42,11 +44,7 @@ import ch.systemsx.cisd.common.spring.HttpInvokerUtils;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.text.WordUtils;
@@ -1317,7 +1315,35 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public List<String> listVocabularyTermsForProperty(PropertyType property) {
-    return null;
+    ensureLoggedIn();
+
+    try {
+      PropertyTypeSearchCriteria ptsc = new PropertyTypeSearchCriteria();
+      ptsc.withCode().thatEquals(property.getCode());
+
+      List<String> vocabTerms = new ArrayList<>();
+      SearchResult<PropertyType> properties = v3.searchPropertyTypes(sessionToken, ptsc, fetchPropertyTypeWithVocabularyAndTerms());
+
+      if (properties.getObjects().isEmpty()) {
+        logger.warn(String.format("Seems like property type %s does not exist anymore. Returning empty list.", property.getCode()));
+        return vocabTerms;
+      }
+
+      try {
+        PropertyType pt = properties.getObjects().get(0);
+        vocabTerms.addAll( pt.getVocabulary().getTerms().stream().map(VocabularyTerm::getCode).collect(Collectors.toList()) );
+        return vocabTerms;
+
+      } catch (NotFetchedException nfe) {
+        logger.warn("PropertyType %s has no fetched vocabulary and/or vocabulary terms. Returning empty list.");
+        return vocabTerms;
+      }
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch property type. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("listVocabularyTermsForProperty(PropertyType property) returned null.");
+      return null;
+    }
   }
 
   /**
