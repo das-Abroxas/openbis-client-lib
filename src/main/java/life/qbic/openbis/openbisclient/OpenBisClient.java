@@ -456,16 +456,16 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
-  @Override
-  public Project getProjectByIdentifier(String projectIdentifier) {
-    // ToDo: Same output as getProjectByCode(String projectCode). These methods should be merged.
+  public Project getProject(String projectCodeOrIdentifier) {
+    ensureLoggedIn();
+
     ensureLoggedIn();
 
     try {
       ProjectSearchCriteria sc = new ProjectSearchCriteria();
       sc.withOrOperator();
-      sc.withId().thatEquals(new ProjectIdentifier(projectIdentifier));
-      sc.withCode().thatEquals(projectIdentifier);
+      sc.withId().thatEquals(new ProjectIdentifier(projectCodeOrIdentifier));
+      sc.withCode().thatEquals(projectCodeOrIdentifier);
 
       SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
 
@@ -479,25 +479,17 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   @Override
+  public Project getProjectByIdentifier(String projectIdentifier) {
+    // ToDo: Can be removed from IOpenBisClient as getProject(String) is sufficient
+
+    return getProject(projectIdentifier);  // ensureLoggedIn() is called in getProject
+  }
+
+  @Override
   public Project getProjectByCode(String projectCode) {
-    // ToDo: Same output as getProjectByIdentifier(String projectIdentifier). These methods should be merged.
-    ensureLoggedIn();
+    // ToDo: Can be removed from IOpenBisClient as getProject(String) is sufficient
 
-    try {
-      ProjectSearchCriteria sc = new ProjectSearchCriteria();
-      sc.withOrOperator();
-      sc.withCode().thatEquals(projectCode);
-      sc.withId().thatEquals(new ProjectIdentifier(projectCode));
-
-      SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
-
-      return projects.getObjects().isEmpty() ? null : projects.getObjects().get(0);
-
-    } catch (UserFailureException ufe) {
-      logger.error("Could not fetch project. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getProjectByIdentifier(String projectIdentifier) returned null.");
-      return null;
-    }
+    return getProject(projectCode);  // ensureLoggedIn() is called in getProject
   }
 
 
