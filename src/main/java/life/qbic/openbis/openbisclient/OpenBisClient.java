@@ -35,7 +35,9 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.fetchoptions.SpaceFetchOpt
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.search.SpaceSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.Vocabulary;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.VocabularyTerm;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.fetchoptions.VocabularyTermFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.search.VocabularySearchCriteria;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.search.VocabularyTermSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.exceptions.NotFetchedException;
 import ch.ethz.sis.openbis.generic.dssapi.v3.IDataStoreServerApi;
 import ch.systemsx.cisd.common.exceptions.NotImplementedException;
@@ -1429,7 +1431,26 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public String getCVLabelForProperty(PropertyType propertyType, String propertyValue) {
-    return null;
+    ensureLoggedIn();
+
+    try {
+      VocabularyTermSearchCriteria vtsc = new VocabularyTermSearchCriteria();
+      vtsc.withCode().thatEquals(propertyValue);
+
+      SearchResult<VocabularyTerm> vocabularyTerms = v3.searchVocabularyTerms(sessionToken, vtsc, new VocabularyTermFetchOptions());
+
+      if (vocabularyTerms.getObjects().isEmpty()) {
+        logger.warn(String.format("Seems like vocabulary term %s does not exist anymore. Returning null.", propertyValue));
+        return null;
+      }
+
+      return vocabularyTerms.getObjects().get(0).getLabel();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch vocabulary terms. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getCVLabelForProperty(PropertyType propertyType, String propertyValue) returned null.");
+      return null;
+    }
   }
 
 

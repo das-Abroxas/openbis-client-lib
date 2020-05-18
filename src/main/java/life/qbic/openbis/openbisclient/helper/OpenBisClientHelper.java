@@ -10,6 +10,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleFetchO
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleTypeFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.fetchoptions.SpaceFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.fetchoptions.VocabularyFetchOptions;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.fetchoptions.VocabularyTermFetchOptions;
 
 public class OpenBisClientHelper {
 
@@ -128,6 +129,14 @@ public class OpenBisClientHelper {
     vocabularyFetchOptions.withTerms();
 
     return vocabularyFetchOptions;
+  }
+
+  public static VocabularyTermFetchOptions fetchVocabularyTermCompletely() {
+    VocabularyTermFetchOptions vocabularyTermFetchOptions = new VocabularyTermFetchOptions();
+    vocabularyTermFetchOptions.withVocabulary();
+    vocabularyTermFetchOptions.withRegistrator();
+
+    return vocabularyTermFetchOptions;
   }
 
   public static PropertyTypeFetchOptions fetchPropertyTypeCompletely() {
