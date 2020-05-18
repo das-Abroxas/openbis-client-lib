@@ -1448,20 +1448,25 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
 
-
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Attachments ------------------------------------------------------------------ */
+  /* ------------------------------------------------------------------------------------ */
   @Override
   public List<Attachment> listAttachmentsForSampleByIdentifier(String sampleIdentifier) {
     ensureLoggedIn();
 
-    return getSampleByIdentifier(sampleIdentifier).getAttachments();
+    return getSample(sampleIdentifier).getAttachments();
   }
 
   @Override
   public List<Attachment> listAttachmentsForProjectByIdentifier(String projectIdentifier) {
     ensureLoggedIn();
 
-    return getProjectByIdentifier(projectIdentifier).getAttachments();
+    return getProject(projectIdentifier).getAttachments();
   }
+
+
+
 
   /**
    * Returns all users of a Space.
