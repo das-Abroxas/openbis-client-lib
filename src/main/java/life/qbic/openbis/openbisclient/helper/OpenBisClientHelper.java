@@ -6,6 +6,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.fetchoptions.Experime
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.person.fetchoptions.PersonFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.fetchoptions.ProjectFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.fetchoptions.PropertyTypeFetchOptions;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.roleassignment.fetchoptions.RoleAssignmentFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleTypeFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.fetchoptions.SpaceFetchOptions;
@@ -156,4 +157,23 @@ public class OpenBisClientHelper {
     return propertyTypeFetchOptions;
   }
 
+
+  public static RoleAssignmentFetchOptions fetchRoleAssignmentCompletely() {
+    RoleAssignmentFetchOptions roleAssignmentFetchOptions = new RoleAssignmentFetchOptions();
+    roleAssignmentFetchOptions.withUser();
+    roleAssignmentFetchOptions.withSpace();
+    roleAssignmentFetchOptions.withProject();
+    roleAssignmentFetchOptions.withRegistrator();
+    roleAssignmentFetchOptions.withAuthorizationGroup();
+
+    return roleAssignmentFetchOptions;
+  }
+
+  public static RoleAssignmentFetchOptions fetchRoleAssignmentWithSpaceAndUser() {
+    RoleAssignmentFetchOptions roleAssignmentFetchOptions = new RoleAssignmentFetchOptions();
+    roleAssignmentFetchOptions.withUser();
+    roleAssignmentFetchOptions.withSpace();
+
+    return roleAssignmentFetchOptions;
+  }
 }

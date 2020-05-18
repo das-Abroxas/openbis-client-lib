@@ -29,6 +29,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.search.PropertyTypeSear
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.roleassignment.Role;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.roleassignment.RoleAssignment;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.roleassignment.RoleLevel;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.roleassignment.search.RoleAssignmentSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.Sample;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.SampleType;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.create.SampleCreation;
@@ -1984,15 +1985,41 @@ public class OpenBisClient implements IOpenBisClient {
   /* ----- Misc ------------------------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
   /**
-   * Returns all users of a Space.
+   * Returns all openBIS users directly assigned to a Space.
    *
    * @param spaceCode code of the openBIS space
    * @return set of user names as string
    */
   @Override
   public Set<String> getSpaceMembers(String spaceCode) {
-    // TODO cannot find an opportunity to do that
-    return null;
+    ensureLoggedIn();
+
+    try {
+      Set<String> members = new HashSet<>();
+      RoleAssignmentSearchCriteria rasc = new RoleAssignmentSearchCriteria();
+      rasc.withSpace().withCode().thatEquals(spaceCode);
+
+      SearchResult<RoleAssignment> roleAssignments = v3.searchRoleAssignments(sessionToken, rasc, fetchRoleAssignmentWithSpaceAndUser());
+
+      if (roleAssignments.getObjects().isEmpty()) { return members; }
+
+      for (RoleAssignment ra : roleAssignments.getObjects()) {
+        try {
+          if (ra.getSpace().getCode().equals(spaceCode)) {
+            members.add(ra.getUser().getUserId());
+          }
+
+        } catch (NotFetchedException nfe) {
+          System.out.printf("RoleAssignment %s has no fetched space or user.", nfe.getMessage()); }
+      }
+
+      return members;
+
+    }  catch (UserFailureException ufe) {
+      logger.error("Could not fetch role assignments. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getSpaceMembers(String spaceCode) returned null.");
+      return null;
+    }
   }
 
   /**
