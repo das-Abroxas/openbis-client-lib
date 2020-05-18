@@ -1476,13 +1476,22 @@ public class OpenBisClient implements IOpenBisClient {
 
   @Override
   public boolean projectExists(String spaceCode, String projectCode) {
-    // TODO why do we need the space code here? Then the method should be named differently
-    ProjectSearchCriteria sc = new ProjectSearchCriteria();
-    sc.withSpace().withCode().thatEquals(spaceCode);
-    sc.withCode().thatEquals(projectCode);
-    SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, new ProjectFetchOptions());
+    ensureLoggedIn();
 
-    return projectCode != null && projects.getTotalCount() != 0;
+    try {
+      ProjectSearchCriteria sc = new ProjectSearchCriteria();
+      sc.withSpace().withCode().thatEquals(spaceCode);
+      sc.withCode().thatEquals(projectCode);
+
+      SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, new ProjectFetchOptions());
+
+      return spaceCode != null && projectCode != null && projects.getTotalCount() > 0;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch projects. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("projectExists(String spaceCode, String projectCode) returned false.");
+      return false;
+    }
   }
 
   @Override
