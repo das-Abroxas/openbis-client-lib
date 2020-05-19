@@ -4,6 +4,7 @@ import static life.qbic.openbis.openbisclient.helper.OpenBisClientHelper.*;
 
 import ch.ethz.sis.openbis.generic.asapi.v3.IApplicationServerApi;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.attachment.Attachment;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.interfaces.IEntityType;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search.SearchResult;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.DataSet;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.search.DataSetSearchCriteria;
@@ -24,7 +25,9 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.fetchoptions.ProjectFetc
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.id.ProjectIdentifier;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.id.ProjectPermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.search.ProjectSearchCriteria;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.PropertyAssignment;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.PropertyType;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.search.PropertyAssignmentSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.search.PropertyTypeSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.roleassignment.Role;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.roleassignment.RoleAssignment;
@@ -52,7 +55,6 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.search.VocabularySear
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.search.VocabularyTermSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.exceptions.NotFetchedException;
 import ch.ethz.sis.openbis.generic.dssapi.v3.IDataStoreServerApi;
-import ch.systemsx.cisd.common.exceptions.NotImplementedException;
 import ch.systemsx.cisd.common.exceptions.UserFailureException;
 import ch.systemsx.cisd.common.spring.HttpInvokerUtils;
 import java.io.InputStream;
@@ -1984,6 +1986,30 @@ public class OpenBisClient implements IOpenBisClient {
   /* ------------------------------------------------------------------------------------ */
   /* ----- Misc ------------------------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
+  @Override
+  public List<PropertyType> listPropertiesForType(IEntityType type) {
+    ensureLoggedIn();
+
+    try {
+      List<PropertyType> propertyTypes = new ArrayList<>();
+      PropertyAssignmentSearchCriteria pasc = new PropertyAssignmentSearchCriteria();
+      pasc.withIds().thatIn(type.getPropertyAssignments().stream().map(PropertyAssignment::getPermId).collect(Collectors.toList()));
+
+      SearchResult<PropertyAssignment> propertyAssignments =
+              v3.searchPropertyAssignments(sessionToken, pasc, fetchPropertyAssignmentWithPropertyType());
+
+      if (propertyAssignments.getObjects().isEmpty()) { return propertyTypes; }
+
+      return propertyAssignments.getObjects().stream().map(PropertyAssignment::getPropertyType).collect(Collectors.toList());
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch property assignments. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("listPropertiesForType(IEntityType type) returned null.");
+      return null;
+    }
+  }
+
+
   /**
    * Returns all openBIS users directly assigned to a Space.
    *

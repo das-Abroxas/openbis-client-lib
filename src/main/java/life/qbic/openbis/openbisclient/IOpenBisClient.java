@@ -1,6 +1,7 @@
 package life.qbic.openbis.openbisclient;
 
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.attachment.Attachment;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.interfaces.IEntityType;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.DataSet;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.Experiment;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.ExperimentType;
@@ -494,13 +495,13 @@ public interface IOpenBisClient {
    */
   public Set<String> getSpaceMembers(String spaceCode);
 
-//  /**
-//   * Function to retrieve all properties which have been assigned to a specific entity type
-//   *
-//   * @param entity_type entitiy type
-//   * @return list of properties which are assigned to the entity type
-//   */
-//  public List<PropertyType> listPropertiesForType(EntityType entity_type);
+  /**
+   * Function to retrieve all properties which have been assigned to a specific entity type
+   *
+   * @param entity_type entitiy type
+   * @return list of properties which are assigned to the entity type
+   */
+  public List<PropertyType> listPropertiesForType(IEntityType entity_type);
 
   /**
    * Function to list the vocabulary terms for a given property which has been added to openBIS. The

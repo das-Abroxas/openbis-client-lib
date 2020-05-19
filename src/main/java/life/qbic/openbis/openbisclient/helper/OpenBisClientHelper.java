@@ -5,6 +5,8 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.fetchoptions.Experime
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.fetchoptions.ExperimentTypeFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.person.fetchoptions.PersonFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.fetchoptions.ProjectFetchOptions;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.PropertyAssignment;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.fetchoptions.PropertyAssignmentFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.fetchoptions.PropertyTypeFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.roleassignment.fetchoptions.RoleAssignmentFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleFetchOptions;
@@ -138,6 +140,23 @@ public class OpenBisClientHelper {
     vocabularyTermFetchOptions.withRegistrator();
 
     return vocabularyTermFetchOptions;
+  }
+
+  public static PropertyAssignmentFetchOptions fetchPropertyAssignmentCompletely() {
+    PropertyAssignmentFetchOptions propertyAssignmentFetchOptions = new PropertyAssignmentFetchOptions();
+    propertyAssignmentFetchOptions.withPropertyType();
+    propertyAssignmentFetchOptions.withEntityType();
+    propertyAssignmentFetchOptions.withPlugin();
+    propertyAssignmentFetchOptions.withRegistrator();
+
+    return propertyAssignmentFetchOptions;
+  }
+
+  public static PropertyAssignmentFetchOptions fetchPropertyAssignmentWithPropertyType() {
+    PropertyAssignmentFetchOptions propertyAssignmentFetchOptions = new PropertyAssignmentFetchOptions();
+    propertyAssignmentFetchOptions.withPropertyTypeUsing(fetchPropertyTypeCompletely());
+
+    return propertyAssignmentFetchOptions;
   }
 
   public static PropertyTypeFetchOptions fetchPropertyTypeCompletely() {
