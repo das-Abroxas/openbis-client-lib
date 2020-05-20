@@ -830,7 +830,7 @@ public interface IOpenBisClient {
    * @param sampleCode the code of the sample
    * @return List of samples matching sample code
    */
-  public List<Sample> searchSampleByCode(String sampleCode);
+  public Sample getSampleByCode(String sampleCode);
 
 //  /**
 //   * returns file information for a given number of datasets. params should look something like

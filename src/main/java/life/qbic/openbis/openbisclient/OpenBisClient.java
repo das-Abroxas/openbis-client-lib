@@ -872,30 +872,54 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   public Sample getSample(String sampleCodeOrIdentifier) {
+    if (sampleCodeOrIdentifier.startsWith("/"))
+      return getSampleByIdentifier(sampleCodeOrIdentifier);  // ensureLoggedIn() is called inside
+    else
+      return getSampleByCode(sampleCodeOrIdentifier);  // ensureLoggedIn() is called inside
+  }
+
+  @Override
+  public Sample getSampleByCode(String sampleCode) {
     ensureLoggedIn();
 
     try {
-      SampleSearchCriteria sampleSearchCriteria = new SampleSearchCriteria();
-      sampleSearchCriteria.withOrOperator();
-      sampleSearchCriteria.withCode().thatEquals(sampleCodeOrIdentifier);
-      sampleSearchCriteria.withId().thatEquals(new SampleIdentifier(sampleCodeOrIdentifier));
+      SampleSearchCriteria ssc = new SampleSearchCriteria();
+      ssc.withCode().thatEquals(sampleCode);
 
-      SearchResult<Sample> samples = v3.searchSamples(sessionToken, sampleSearchCriteria, fetchSamplesCompletely());
+      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
+
+      if (samples.getTotalCount() == 0)
+        logger.warn(String.format("No samples found with getSample(\"%s\").", sampleCode));
 
       return samples.getObjects().isEmpty() ? null : samples.getObjects().get(0);
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch samples. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getSample(String sampleCodeOrIdentifier) returned null.");
+      logger.warn(String.format("  getSampleByCode(\"%s\") returned null.", sampleCode));
       return null;
     }
   }
 
   @Override
   public Sample getSampleByIdentifier(String sampleIdentifier) {
-    // ToDo: Can be removed from IOpenBisClient as getSample(String) is sufficient
+    ensureLoggedIn();
 
-    return getSample(sampleIdentifier);  // ensureLoggedIn() is called in getSample
+    try {
+      SampleSearchCriteria ssc = new SampleSearchCriteria();
+      ssc.withIdentifier().thatEquals(sampleIdentifier);
+
+      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
+
+      if (samples.getTotalCount() == 0)
+        logger.warn(String.format("No samples found with getSampleByIdentifier(\"%s\").", sampleIdentifier));
+
+      return samples.getObjects().isEmpty() ? null : samples.getObjects().get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch samples. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn(String.format("  getSampleByIdentifier(\"%s\") returned null.", sampleIdentifier));
+      return null;
+    }
   }
 
   /**
@@ -2195,16 +2219,6 @@ public class OpenBisClient implements IOpenBisClient {
   public List<Sample> getChildrenSamples(Sample sample) {
     // TODO unnecessary method in v3 api
     return sample.getChildren();
-  }
-
-  @Override
-  public List<Sample> searchSampleByCode(String sampleCode) {
-    SampleSearchCriteria sc = new SampleSearchCriteria();
-    sc.withCode().thatEquals(sampleCode);
-    SampleFetchOptions fetchOptions = new SampleFetchOptions();
-    fetchOptions.withSpace();
-    SearchResult<Sample> samples = v3.searchSamples(sessionToken, sc, fetchOptions);
-    return samples.getObjects();
   }
 
   /**
