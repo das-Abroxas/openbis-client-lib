@@ -852,21 +852,27 @@ public class OpenBisClient implements IOpenBisClient {
    * @return list with all samples of the given experiment
    */
   @Override
-  public List<Sample> getSamplesofExperiment(String experimentIdentifier) {
+  public List<Sample> getSamplesofExperiment(String experimentCodeOrIdentifier) {
     ensureLoggedIn();
 
     try {
-      SampleSearchCriteria sampleSearchCriteria = new SampleSearchCriteria();
-      sampleSearchCriteria.withOrOperator();
-      sampleSearchCriteria.withExperiment().withCode().thatEquals(experimentIdentifier);
-      sampleSearchCriteria.withExperiment().withId().thatEquals( new ExperimentIdentifier(experimentIdentifier) );
+      SampleSearchCriteria ssc = new SampleSearchCriteria();
 
-      SearchResult<Sample> samplesOfExperiment = v3.searchSamples(sessionToken, sampleSearchCriteria, fetchSamplesCompletely());
+      if (experimentCodeOrIdentifier.startsWith("/"))
+        ssc.withExperiment().withIdentifier().thatEquals(experimentCodeOrIdentifier);
+      else
+        ssc.withExperiment().withCode().thatEquals(experimentCodeOrIdentifier);
+
+      SearchResult<Sample> samplesOfExperiment = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
+
+      if (samplesOfExperiment.getTotalCount() == 0)
+        logger.warn(String.format("No samples found with getSamplesofExperiment(\"%s\").", experimentCodeOrIdentifier));
+
       return samplesOfExperiment.getObjects();
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch samples. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getSamplesOfProject(String projIdentifier) returned null.");
+      logger.warn(String.format("getSamplesofExperiment(\"%s\") returned null.", experimentCodeOrIdentifier));
       return null;
     }
   }
