@@ -230,8 +230,8 @@ public class OpenBisClient implements IOpenBisClient {
    * If not, one attempt is made to reconnect to the openBIS server with the username provided.
    */
   public void ensureLoggedIn(String user) {
-    if (!this.loggedIn(userId)) {
-      this.loginAsUser(userId);
+    if (!this.loggedIn(user)) {
+      this.loginAsUser(user);
     }
   }
 
