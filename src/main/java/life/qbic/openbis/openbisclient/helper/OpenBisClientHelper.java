@@ -75,14 +75,14 @@ public class OpenBisClientHelper {
 
   public static ExperimentFetchOptions fetchExperimentsCompletely() {
     ExperimentFetchOptions experimentFetchOptions = new ExperimentFetchOptions();
+    experimentFetchOptions.withProject();
+    experimentFetchOptions.withSamples();
+    experimentFetchOptions.withDataSets();
     experimentFetchOptions.withAttachments();
     experimentFetchOptions.withHistory();
     experimentFetchOptions.withModifier();
     experimentFetchOptions.withRegistrator();
-    experimentFetchOptions.withSamples();
-    experimentFetchOptions.withDataSets();
     experimentFetchOptions.withMaterialProperties();
-    experimentFetchOptions.withProjectUsing(fetchProjectsCompletely());
     experimentFetchOptions.withProperties();
     experimentFetchOptions.withTags();
     experimentFetchOptions.withType();

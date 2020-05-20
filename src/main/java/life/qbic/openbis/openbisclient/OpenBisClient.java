@@ -663,36 +663,54 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   public Experiment getExperiment(String experimentCodeOrIdentifier) {
+    if (experimentCodeOrIdentifier.startsWith("/"))
+      return getExperimentById(experimentCodeOrIdentifier);  // ensureLoggedIn() is called inside
+    else
+      return getExperimentByCode(experimentCodeOrIdentifier);  // ensureLoggedIn() is called inside
+  }
+
+  @Override
+  public Experiment getExperimentByCode(String experimentCode) {
     ensureLoggedIn();
 
     try {
-      ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-      sc.withCode().thatEquals(experimentCodeOrIdentifier);
-      sc.withId().thatEquals( new ExperimentIdentifier(experimentCodeOrIdentifier) );
+      ExperimentSearchCriteria esc = new ExperimentSearchCriteria();
+      esc.withCode().thatEquals(experimentCode);
 
-      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, esc, fetchExperimentsCompletely());
+
+      if (experiments.getTotalCount() == 0)
+        logger.warn(String.format("No experiments found with getExperimentByCode(\"%s\").", experimentCode));
 
       return experiments.getObjects().isEmpty() ? null : experiments.getObjects().get(0);
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
-      logger.warn("getExperimentByCode(String experimentCode) returned null.");
+      logger.warn(String.format("getExperimentByCode(\"%s\") returned null.", experimentCode));
       return null;
     }
   }
 
   @Override
-  public Experiment getExperimentByCode(String experimentCode) {
-    // ToDo: Can be removed from IOpenBisClient as getExperiment(String) is sufficient
-
-    return getExperiment(experimentCode);  // ensureLoggedIn() is called in getExperiment
-  }
-
-  @Override
   public Experiment getExperimentById(String experimentId) {
-    // ToDo: Can be removed from IOpenBisClient as getExperiment(String) is sufficient
+    ensureLoggedIn();
 
-    return getExperiment(experimentId);  // ensureLoggedIn() is called in getExperiment
+    try {
+      ExperimentSearchCriteria esc = new ExperimentSearchCriteria();
+      esc.withId().thatEquals( new ExperimentIdentifier(experimentId) );
+
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, esc, fetchExperimentsCompletely());
+
+      if (experiments.getTotalCount() == 0)
+        logger.warn(String.format("No experiments found with getExperimentById(\"%s\").", experimentId));
+
+      return experiments.getObjects().isEmpty() ? null : experiments.getObjects().get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
+      logger.warn(String.format("getExperimentById(\"%s\") returned null.", experimentId));
+      return null;
+    }
   }
 
   @Override
