@@ -351,24 +351,34 @@ public interface IOpenBisClient {
   public Project getProjectOfExperimentByIdentifier(String experimentIdentifier);
 
   /**
-   * Function to list all datasets of a specific sample (watch out there are different dataset
-   * classes)
+   * Function to list all datasets of a specific sample
+   * (watch out there are different dataset classes)
    *
-   * @param sampleIdentifier identifier of the openBIS sample
+   * @param sampleIdentifier Identifier of the openBIS sample
    * @return list with all datasets of the given sample
    */
   public List<DataSet> getDataSetsOfSampleByIdentifier(
       String sampleIdentifier);
 
   /**
-   * Function to list all datasets of a specific sample (watch out there are different dataset
-   * classes)
+   * Function to list all datasets of a specific sample
+   * (watch out there are different dataset classes)
    *
-   * @param sampleCode code or identifier of the openBIS sample
+   * @param sampleCode Code of the openBIS sample
+   * @return list with all datasets of the given sample
+   */
+  public List<DataSet> getDataSetsOfSampleByCode(
+          String sampleCode);
+
+  /**
+   * Function to list all datasets of a specific sample
+   * (watch out there are different dataset classes)
+   *
+   * @param sampleCodeOrIdentifier Code or identifier of the openBIS sample
    * @return list with all datasets of the given sample
    */
   public List<DataSet> getDataSetsOfSample(
-      String sampleCode);
+      String sampleCodeOrIdentifier);
 
   /**
    * Function to list all datasets of a specific experiment (watch out there are different dataset

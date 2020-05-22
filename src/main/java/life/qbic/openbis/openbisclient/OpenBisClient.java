@@ -1245,13 +1245,20 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public List<DataSet> getDataSetsOfSample(String sampleCodeOrIdentifier) {
+    if (sampleCodeOrIdentifier.startsWith("/"))
+      return getDataSetsOfSampleByIdentifier(sampleCodeOrIdentifier);  // ensureLoggedIn() is called inside
+    else
+      return getDataSetsOfSampleByCode(sampleCodeOrIdentifier);  // ensureLoggedIn() is called inside
+  }
+
+  @Override
+  public List<DataSet> getDataSetsOfSampleByCode(String sampleCode) {
     ensureLoggedIn();
 
     try {
       DataSetSearchCriteria ssc = new DataSetSearchCriteria();
       ssc.withOrOperator();
-      ssc.withSample().withCode().thatEquals(sampleCodeOrIdentifier);
-      ssc.withSample().withId().thatEquals( new SampleIdentifier(sampleCodeOrIdentifier) );
+      ssc.withSample().withCode().thatEquals(sampleCode);
 
       SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, ssc, fetchDataSetsCompletely());
 
@@ -1273,9 +1280,22 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public List<DataSet> getDataSetsOfSampleByIdentifier(String sampleIdentifier) {
-    // ToDo: Can be removed from IOpenBisClient as getDataSetsOfSample(String) is sufficient
+    ensureLoggedIn();
 
-    return getDataSetsOfSample(sampleIdentifier);  // ensureLoggedIn() is called in getDataSetsOfSample
+    try {
+      DataSetSearchCriteria ssc = new DataSetSearchCriteria();
+      ssc.withOrOperator();
+      ssc.withSample().withIdentifier().thatEquals(sampleIdentifier);
+
+      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, ssc, fetchDataSetsCompletely());
+
+      return dataSets.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.warn("getDataSetsOfSample(String sampleCode) returned null.");
+      return null;
+    }
   }
 
   @Override
