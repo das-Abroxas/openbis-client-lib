@@ -95,39 +95,39 @@ public class OldTstsOpenBisClient {
     openbisClient =
         new OpenBisClient("user", config.getProperty("datasource.password"),
             DATASOURCE_URL);
-    assertFalse(openbisClient.loggedin());
+    assertFalse(openbisClient.loggedIn());
     openbisClient =
         new OpenBisClient(config.getProperty("datasource.user"), "wrongpassword",
             DATASOURCE_URL);
-    assertFalse(openbisClient.loggedin());
+    assertFalse(openbisClient.loggedIn());
     openbisClient =
         new OpenBisClient(config.getProperty("datasource.user"),
             config.getProperty("datasource.pass"),
             "wrongurl");
-    assertFalse(openbisClient.loggedin());
+    assertFalse(openbisClient.loggedIn());
   }
 
   @Test
   public void testLoggedin() {
-    assertTrue(openbisClient.loggedin());
+    assertTrue(openbisClient.loggedIn());
     openbisClient =
         new OpenBisClient("someuser", config.getProperty("datasource.password"), DATASOURCE_URL);
-    assertFalse(openbisClient.loggedin());
+    assertFalse(openbisClient.loggedIn());
   }
 
   @Test
   public void testLogout() {
-    assertTrue(openbisClient.loggedin());
+    assertTrue(openbisClient.loggedIn());
     openbisClient.logout();
-    assertFalse(openbisClient.loggedin());
+    assertFalse(openbisClient.loggedIn());
   }
 
   @Test
   public void testLogin() {
-    assertTrue(openbisClient.loggedin());
+    assertTrue(openbisClient.loggedIn());
     openbisClient.logout();
     openbisClient.login();
-    assertTrue(openbisClient.loggedin());
+    assertTrue(openbisClient.loggedIn());
   }
 
   @Test()
@@ -166,7 +166,7 @@ public class OldTstsOpenBisClient {
 
   @Test
   public void testGetSamplesofExperiment() {
-    List<Sample> samples = openbisClient.getSamplesofExperiment("QA001E1");
+    List<Sample> samples = openbisClient.getSamplesOfExperiment("QA001E1");
     Sample sample = samples.get(0);
     assertEquals(sample.getClass(), Sample.class);
     assertSampleCompletetlyFetched(sample);
@@ -176,24 +176,24 @@ public class OldTstsOpenBisClient {
   public void testGetSamplesofExperimentNull() {
     exception.expect(RuntimeException.class);
     exception.expectMessage("NullPointerException");
-    openbisClient.getSamplesofExperiment(null);
+    openbisClient.getSamplesOfExperiment(null);
   }
 
   @Test
   public void testGetSamplesofExperimentEmpty() {
     exception.expect(UserFailureException.class);
-    openbisClient.getSamplesofExperiment("");
+    openbisClient.getSamplesOfExperiment("");
   }
 
   @Test
   public void testGetSamplesofExperimentNotExist() {
     //TODO should raise error instead returning empty list
-    openbisClient.getSamplesofExperiment("doesnotexist");
+    openbisClient.getSamplesOfExperiment("doesnotexist");
   }
 
   @Test
   public void testGetSamplesofSpace() {
-    List<Sample> samps = openbisClient.getSamplesofSpace("MFT_PICHLER_MULTISCALE");
+    List<Sample> samps = openbisClient.getSamplesOfSpace("MFT_PICHLER_MULTISCALE");
     assertThat(samps.size()).isAtLeast(12);
     assertThat(samps.get(0)).isInstanceOf(Sample.class);
     assertSampleCompletetlyFetched(samps.get(0));
@@ -203,19 +203,19 @@ public class OldTstsOpenBisClient {
   public void testGetSamplesofSpaceNull() {
     exception.expect(RuntimeException.class);
     exception.expectMessage("NullPointerException");
-    openbisClient.getSamplesofSpace(null);
+    openbisClient.getSamplesOfSpace(null);
   }
 
   @Test
   public void testGetSamplesofSpaceEmpty() {
     exception.expect(UserFailureException.class);
-    openbisClient.getSamplesofSpace("");
+    openbisClient.getSamplesOfSpace("");
   }
 
   @Test
   public void testGetSamplesofSpaceNotExist() {
     //TODO should raise error instead returning empty list
-    openbisClient.getSamplesofSpace("doesnotexist");
+    openbisClient.getSamplesOfSpace("doesnotexist");
   }
 
   @Test
@@ -876,7 +876,7 @@ public class OldTstsOpenBisClient {
   @Test
   public void testGetDataSetsOfSpaceByIdentifier() {
     List<DataSet> dsets =
-        openbisClient.getDataSetsOfSpaceByIdentifier(openbisClient.listSpaces().get(0));
+        openbisClient.getDataSetsOfSpace(openbisClient.listSpaces().get(0));
     assertThat(dsets.size()).isAtLeast(1);
     assertEquals(dsets.get(0).getClass(), DataSet.class);
     assertDataSetCompletelyFetched(dsets.get(0));
@@ -886,19 +886,19 @@ public class OldTstsOpenBisClient {
   public void testGetDataSetsOfSpaceByIdentifierNull() {
     exception.expect(RuntimeException.class);
     exception.expectMessage("Null");
-    openbisClient.getDataSetsOfSpaceByIdentifier(null);
+    openbisClient.getDataSetsOfSpace(null);
   }
 
   @Test
   public void testGetDataSetsOfSpaceByIdentifierEmpty() {
     exception.expect(UserFailureException.class);
-    openbisClient.getDataSetsOfSpaceByIdentifier("");
+    openbisClient.getDataSetsOfSpace("");
   }
 
   @Test
   public void testGetDataSetsOfSpaceByIdentifierNotExist() {
     //TODO should raise an exception instead returning empty list
-    openbisClient.getDataSetsOfSpaceByIdentifier("/doesnot/exist");
+    openbisClient.getDataSetsOfSpace("/doesnot/exist");
   }
 
   //TODO does not work yet
@@ -1156,7 +1156,7 @@ public class OldTstsOpenBisClient {
 
   @Test
   public void testOpenBIScodeToString() {
-    assertThat(openbisClient.openBIScodeToString("Q_BIOLOGICAL_ENTITY")).isEqualTo(
+    assertThat(openbisClient.openbisCodeToString("Q_BIOLOGICAL_ENTITY")).isEqualTo(
         "Biological Entity");
   }
 

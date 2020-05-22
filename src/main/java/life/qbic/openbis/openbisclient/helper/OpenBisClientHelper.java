@@ -20,8 +20,14 @@ public class OpenBisClientHelper {
   public static PersonFetchOptions fetchPersonCompletely() {
     PersonFetchOptions personFetchOptions = new PersonFetchOptions();
     personFetchOptions.withRoleAssignments();
-    // personFetchOptions.withSpace();
+    personFetchOptions.withSpace();
     personFetchOptions.withRegistrator();
+
+    return personFetchOptions;
+  }
+
+  public static PersonFetchOptions fetchPersonWithSpace() {
+    PersonFetchOptions personFetchOptions = new PersonFetchOptions();
     personFetchOptions.withSpaceUsing(fetchSpacesCompletely());
 
     return personFetchOptions;

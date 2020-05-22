@@ -72,13 +72,13 @@ import org.apache.logging.log4j.Logger;
  */
 public class OpenBisClient implements IOpenBisClient {
 
+  private static final Logger logger = LogManager.getLogger(OpenBisClient.class);
   private final int TIMEOUT = 100000;
   private final String userId, password, serverUrl, asApiUrl, dsApiUrl;
   private final IApplicationServerApi v3;
   private final IDataStoreServerApi dss3;
-  private static final Logger logger = LogManager.getLogger(OpenBisClient.class);
-
   private String sessionToken;
+
 
   /**
    * Instantiates a new opnBIS client.
@@ -103,7 +103,7 @@ public class OpenBisClient implements IOpenBisClient {
   /**
    * Function map an integer value to a char
    *
-   * @param i the integer value which should be mapped
+   * @param i The integer value which should be mapped
    * @return the resulting char value
    */
   public static char mapToChar(int i) {
@@ -165,7 +165,7 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public void login() {
-    if (loggedin()) {
+    if (loggedIn()) {
       logout();
     }
     // Login to obtain a session token
@@ -178,7 +178,7 @@ public class OpenBisClient implements IOpenBisClient {
    * @param user openBIS user name
    */
   public void loginAsUser(String user) {
-    if (loggedin()) {
+    if (loggedIn()) {
       logout();
     }
 
@@ -192,7 +192,7 @@ public class OpenBisClient implements IOpenBisClient {
    * @return True if session token is still active else false
    */
   @Override
-  public boolean loggedin() {
+  public boolean loggedIn() {
     try {
       return v3.isSessionActive(sessionToken);
     } catch (Exception e) {
@@ -220,7 +220,7 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public void ensureLoggedIn() {
-    if (!this.loggedin()) {
+    if (!this.loggedIn()) {
       this.login();
     }
   }
@@ -240,7 +240,7 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public void logout() {
-    if (loggedin()) {
+    if (loggedIn()) {
       v3.logout(sessionToken);
     }
     sessionToken = null;
@@ -293,17 +293,20 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
+      List<String> spaceCodes = new ArrayList<>();
       SearchResult<Space> spaces = v3.searchSpaces(sessionToken, new SpaceSearchCriteria(), new SpaceFetchOptions());
-      List<String> spaceIdentifiers = new ArrayList<>();
+
+      if (spaces.getTotalCount() == 0)
+        logger.info("No spaces found with listSpaces().");
 
       for (Space space : spaces.getObjects()) {
-        spaceIdentifiers.add(space.getCode());
+        spaceCodes.add(space.getCode());
       }
 
-      return spaceIdentifiers;
+      return spaceCodes;
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch spaces from openBIS. Is currently logged in user admin?");
+      logger.error("Could not fetch spaces. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn("listSpaces() returned null.");
       return null;
     }
@@ -350,13 +353,17 @@ public class OpenBisClient implements IOpenBisClient {
 
     try {
       SearchResult<Space> spaces = v3.searchSpaces(sessionToken, new SpaceSearchCriteria(), fetchSpacesCompletely());
+
+      if (spaces.getTotalCount() == 0)
+        logger.info(String.format("No spaces found with listSpacesForUser(\"%s\").", user));
+
       List<String> spaceIdentifiers = spaces.getObjects().stream().map(Space::getCode).collect(Collectors.toList());
 
       return spaceIdentifiers;
 
     } catch (UserFailureException ufe) {
-      logger.error(String.format("User %s could not fetch spaces.", user));
-      logger.warn("Returned empty list.");
+      logger.error(String.format("Could not fetch spaces of user %s. Does this user exist in openBIS?", user));
+      logger.warn(String.format("listSpacesForUser(\"%s\") returned null.", userId));
       return null;
     }
   }
@@ -376,10 +383,14 @@ public class OpenBisClient implements IOpenBisClient {
 
     try {
       SearchResult<Project> projects = v3.searchProjects(sessionToken, new ProjectSearchCriteria(), fetchProjectsCompletely());
+
+      if (projects.getTotalCount() == 0)
+        logger.info("No projects found with listProjects().");
+
       return projects.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch projects from openBIS. Is currently logged in user admin?");
+      logger.error("Could not fetch projects. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn("listProjects() returned null.");
       return null;
     }
@@ -395,30 +406,37 @@ public class OpenBisClient implements IOpenBisClient {
 
     try {
       SearchResult<Project> projects = v3.searchProjects(sessionToken, new ProjectSearchCriteria(), fetchProjectsCompletely());
+
+      if (projects.getTotalCount() == 0)
+        logger.info(String.format("No projects found with listProjectsForUser(\"%s\").", user));
+
       return projects.getObjects();
 
     } catch (UserFailureException ufe) {
       logger.error(String.format("Could not fetch projects of user %s. Does this user exist in openBIS?", user));
-      logger.warn("listProjectsForUser(String user) returned null.");
+      logger.warn(String.format("listProjectsForUser(\"%s\") returned null.", user));
       return null;
     }
   }
 
   @Override
-  public List<Project> getProjectsOfSpace(String space) {
+  public List<Project> getProjectsOfSpace(String spaceCode) {
     ensureLoggedIn();
 
     try {
-      ProjectSearchCriteria sc = new ProjectSearchCriteria();
-      sc.withSpace().withCode().thatEquals(space);
+      ProjectSearchCriteria psc = new ProjectSearchCriteria();
+      psc.withSpace().withCode().thatEquals(spaceCode);
 
-      SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
+      SearchResult<Project> projects = v3.searchProjects(sessionToken, psc, fetchProjectsCompletely());
+
+      if (projects.getTotalCount() == 0)
+        logger.info(String.format("No projects found with getProjectsOfSpace(\"%s\").", spaceCode));
 
       return projects.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch projects of space. Does the currently logged in user have sufficient permissions in openBIS?");
-      logger.warn("getProjectsOfSpace(String space) returned null.");
+      logger.error("Could not fetch projects of space. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getProjectsOfSpace(\"%s\") returned null.", spaceCode));
       return null;
     }
   }
@@ -449,12 +467,13 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-      sc.withOrOperator();
-      sc.withCode().thatEquals(experimentIdentifier);
-      sc.withId().thatEquals(new ExperimentIdentifier(experimentIdentifier));
+      ExperimentSearchCriteria esc = new ExperimentSearchCriteria();
+      esc.withId().thatEquals(new ExperimentIdentifier(experimentIdentifier));
 
-      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, esc, fetchExperimentsCompletely());
+
+      if (experiments.getTotalCount() == 0)
+        logger.info(String.format("No experiments found with getProjectOfExperimentByIdentifier(\"%s\").", experimentIdentifier));
 
       return experiments.getObjects().isEmpty() ? null : experiments.getObjects().get(0).getProject();
 
@@ -464,8 +483,8 @@ public class OpenBisClient implements IOpenBisClient {
       return null;
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch experiment. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getProjectOfExperimentByIdentifier(String experimentIdentifier) returned null.");
+      logger.error("Could not fetch experiments. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getProjectOfExperimentByIdentifier(\"%s\") returned null.", experimentIdentifier));
       return null;
     }
   }
@@ -474,18 +493,21 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      ProjectSearchCriteria sc = new ProjectSearchCriteria();
-      sc.withOrOperator();
-      sc.withId().thatEquals(new ProjectIdentifier(projectCodeOrIdentifier));
-      sc.withCode().thatEquals(projectCodeOrIdentifier);
+      ProjectSearchCriteria psc = new ProjectSearchCriteria();
+      psc.withOrOperator();
+      psc.withId().thatEquals(new ProjectIdentifier(projectCodeOrIdentifier));
+      psc.withCode().thatEquals(projectCodeOrIdentifier);
 
-      SearchResult<Project> projects = v3.searchProjects(sessionToken, sc, fetchProjectsCompletely());
+      SearchResult<Project> projects = v3.searchProjects(sessionToken, psc, fetchProjectsCompletely());
+
+      if (projects.getTotalCount() == 0)
+        logger.info(String.format("No projects found with getProject(\"%s\").", projectCodeOrIdentifier));
 
       return projects.getObjects().isEmpty() ? null : projects.getObjects().get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch project. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getProjectByIdentifier(String projectIdentifier) returned null.");
+      logger.error("Could not fetch projects. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getProject(\"%s\") returned null.", projectCodeOrIdentifier));
       return null;
     }
   }
@@ -493,14 +515,12 @@ public class OpenBisClient implements IOpenBisClient {
   @Override
   public Project getProjectByIdentifier(String projectIdentifier) {
     // ToDo: Can be removed from IOpenBisClient as getProject(String) is sufficient
-
     return getProject(projectIdentifier);  // ensureLoggedIn() is called in getProject
   }
 
   @Override
   public Project getProjectByCode(String projectCode) {
     // ToDo: Can be removed from IOpenBisClient as getProject(String) is sufficient
-
     return getProject(projectCode);  // ensureLoggedIn() is called in getProject
   }
 
@@ -519,10 +539,14 @@ public class OpenBisClient implements IOpenBisClient {
 
     try {
       SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, new ExperimentSearchCriteria(), fetchExperimentsCompletely());
+
+      if (experiments.getTotalCount() == 0)
+        logger.info("No experiments found with listExperiments().");
+
       return experiments.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
+      logger.error("Could not fetch experiments. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn("listExperiments() returned null.");
       return null;
     }
@@ -538,11 +562,15 @@ public class OpenBisClient implements IOpenBisClient {
 
     try {
       SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, new ExperimentSearchCriteria(), fetchExperimentsCompletely());
+
+      if (experiments.getTotalCount() == 0)
+        logger.info(String.format("No experiments found with listExperimentsForUser(\"%s\").", user));
+
       return experiments.getObjects();
 
     } catch (UserFailureException ufe) {
       logger.error(String.format("Could not fetch experiments of user %s. Does this user exist in openBIS?", user));
-      logger.warn("listExperimentsForUser(String user) returned null.");
+      logger.warn(String.format("listExperimentsForUser(\"%s\") returned null.", user));
       return null;
     }
   }
@@ -576,36 +604,25 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   @Override
-  public List<Experiment> getExperimentsOfSpace(String spaceIdentifier) {
+  public List<Experiment> getExperimentsOfSpace(String spaceCode) {
     ensureLoggedIn();
 
     try {
-      ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-      sc.withProject().withSpace().withCode().thatEquals(spaceIdentifier);
+      ExperimentSearchCriteria esc = new ExperimentSearchCriteria();
+      esc.withProject().withSpace().withCode().thatEquals(spaceCode);
 
-      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, esc, fetchExperimentsCompletely());
+
+      if (experiments.getTotalCount() == 0)
+        logger.info(String.format("No experiments found with getExperimentsOfSpace(\"%s\").", spaceCode));
 
       return experiments.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
-      logger.warn("getExperimentsOfSpace(String spaceIdentifier) returned null.");
+      logger.error("Could not fetch experiments. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getExperimentsOfSpace(\"%s\") returned null.", spaceCode));
       return null;
     }
-  }
-
-  @Override
-  public List<Experiment> getExperimentsOfProjectByIdentifier(String projectIdentifier) {
-    // ToDo: Can be removed from IOpenBisClient as getExperimentsForProject(String) is sufficient
-
-    return getExperimentsForProject(projectIdentifier);  // ensureLoggedIn() is called in getExperimentsForProject
-  }
-
-  @Override
-  public List<Experiment> getExperimentsOfProjectByCode(String projectCode) {
-    // ToDo: Can be removed from IOpenBisClient as getExperimentsForProject(String) is sufficient
-
-    return getExperimentsForProject(projectCode);  // ensureLoggedIn() is called in getExperimentsForProject
   }
 
   /**
@@ -620,16 +637,19 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-      sc.withProject().withCode().thatEquals(project.getCode());
+      ExperimentSearchCriteria esc = new ExperimentSearchCriteria();
+      esc.withProject().withCode().thatEquals(project.getCode());
 
-      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, esc, fetchExperimentsCompletely());
+
+      if (experiments.getTotalCount() == 0)
+        logger.info(String.format("No experiments found with getExperimentsForProject(%s).", project.toString()));
 
       return experiments.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
-      logger.warn("getExperimentsForProject(Project project) returned null.");
+      logger.error("Could not fetch experiments. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getExperimentsForProject(\"%s\") returned null.", project.getCode()));
       return null;
     }
   }
@@ -646,20 +666,35 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-      sc.withOrOperator();
-      sc.withProject().withCode().thatEquals(projectCodeOrIdentifier);
-      sc.withProject().withId().thatEquals(new ProjectIdentifier(projectCodeOrIdentifier));
+      ExperimentSearchCriteria esc = new ExperimentSearchCriteria();
+      esc.withOrOperator();
+      esc.withProject().withCode().thatEquals(projectCodeOrIdentifier);
+      esc.withProject().withId().thatEquals(new ProjectIdentifier(projectCodeOrIdentifier));
 
-      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, esc, fetchExperimentsCompletely());
+
+      if (experiments.getTotalCount() == 0)
+        logger.info(String.format("No experiments found with getExperimentsForProject(%s).", projectCodeOrIdentifier));
 
       return experiments.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
-      logger.warn("getExperimentsForProject(String projectCodeOrIdentifier) returned null.");
+      logger.error("Could not fetch experiments. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getExperimentsForProject(\"%s\") returned null.", projectCodeOrIdentifier));
       return null;
     }
+  }
+
+  @Override
+  public List<Experiment> getExperimentsOfProjectByIdentifier(String projectIdentifier) {
+    // ToDo: Can be removed from IOpenBisClient as getExperimentsForProject(String) is sufficient
+    return getExperimentsForProject(projectIdentifier);  // ensureLoggedIn() is called in getExperimentsForProject
+  }
+
+  @Override
+  public List<Experiment> getExperimentsOfProjectByCode(String projectCode) {
+    // ToDo: Can be removed from IOpenBisClient as getExperimentsForProject(String) is sufficient
+    return getExperimentsForProject(projectCode);  // ensureLoggedIn() is called in getExperimentsForProject
   }
 
   public Experiment getExperiment(String experimentCodeOrIdentifier) {
@@ -680,12 +715,12 @@ public class OpenBisClient implements IOpenBisClient {
       SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, esc, fetchExperimentsCompletely());
 
       if (experiments.getTotalCount() == 0)
-        logger.warn(String.format("No experiments found with getExperimentByCode(\"%s\").", experimentCode));
+        logger.info(String.format("No experiments found with getExperimentByCode(\"%s\").", experimentCode));
 
       return experiments.getObjects().isEmpty() ? null : experiments.getObjects().get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
+      logger.error("Could not fetch experiments. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn(String.format("getExperimentByCode(\"%s\") returned null.", experimentCode));
       return null;
     }
@@ -702,32 +737,35 @@ public class OpenBisClient implements IOpenBisClient {
       SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, esc, fetchExperimentsCompletely());
 
       if (experiments.getTotalCount() == 0)
-        logger.warn(String.format("No experiments found with getExperimentById(\"%s\").", experimentId));
+        logger.info(String.format("No experiments found with getExperimentById(\"%s\").", experimentId));
 
       return experiments.getObjects().isEmpty() ? null : experiments.getObjects().get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
+      logger.error("Could not fetch experiments. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn(String.format("getExperimentById(\"%s\") returned null.", experimentId));
       return null;
     }
   }
 
   @Override
-  public List<Experiment> getExperimentsOfType(String type) {
+  public List<Experiment> getExperimentsOfType(String typeCode) {
     ensureLoggedIn();
 
     try {
-      ExperimentSearchCriteria sc = new ExperimentSearchCriteria();
-      sc.withType().withCode().thatEquals(type);
+      ExperimentSearchCriteria esc = new ExperimentSearchCriteria();
+      esc.withType().withCode().thatEquals(typeCode);
 
-      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, sc, fetchExperimentsCompletely());
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, esc, fetchExperimentsCompletely());
+
+      if (experiments.getTotalCount() == 0)
+        logger.info(String.format("No experiments found with getExperimentsOfType(\"%s\").", typeCode));
 
       return experiments.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch experiments from openBIS. Is currently logged in user admin?");
-      logger.warn("getExperimentsOfType(String type) returned null.");
+      logger.error("Could not fetch experiments. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getExperimentsOfType(\"%s\") returned null.", typeCode));
       return null;
     }
   }
@@ -735,24 +773,27 @@ public class OpenBisClient implements IOpenBisClient {
   /**
    * Function to get a ExperimentType object of a experiment type
    *
-   * @param experimentType the experiment type as string
+   * @param typeCode the experiment type as string
    * @return the ExperimentType object of the corresponding experiment type
    */
   @Override
-  public ExperimentType getExperimentTypeByString(String experimentType) {
+  public ExperimentType getExperimentTypeByString(String typeCode) {
     ensureLoggedIn();
 
     try {
-      ExperimentTypeSearchCriteria sc = new ExperimentTypeSearchCriteria();
-      sc.withCode().thatContains(experimentType);
+      ExperimentTypeSearchCriteria etsc = new ExperimentTypeSearchCriteria();
+      etsc.withCode().thatContains(typeCode);
 
-      SearchResult<ExperimentType> experimentTypes = v3.searchExperimentTypes(sessionToken, sc, fetchExperimentTypesCompletely());
+      SearchResult<ExperimentType> experimentTypes = v3.searchExperimentTypes(sessionToken, etsc, fetchExperimentTypesCompletely());
+
+      if (experimentTypes.getTotalCount() == 0)
+        logger.info(String.format("No experiment types found with getExperimentTypeByString(\"%s\").", typeCode));
 
       return experimentTypes.getObjects().isEmpty() ? null : experimentTypes.getObjects().get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch experiment types from openBIS. Is currently logged in user admin?");
-      logger.warn("getExperimentTypeByString(String experimentType) returned null.");
+      logger.error("Could not fetch experiment types. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getExperimentTypeByString(\"%s\") returned null.", typeCode));
       return null;
     }
   }
@@ -770,10 +811,14 @@ public class OpenBisClient implements IOpenBisClient {
 
     try {
       SearchResult<Sample> samples = v3.searchSamples(sessionToken, new SampleSearchCriteria(), fetchSamplesCompletely());
+
+      if (samples.getTotalCount() == 0)
+        logger.info("No samples found with listSamples().");
+
       return samples.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch samples from openBIS. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn("listSamples() returned null.");
       return null;
     }
@@ -789,11 +834,15 @@ public class OpenBisClient implements IOpenBisClient {
 
     try {
       SearchResult<Sample> samples = v3.searchSamples(sessionToken, new SampleSearchCriteria(), fetchSamplesCompletely());
+
+      if (samples.getTotalCount() == 0)
+        logger.info(String.format("No samples found with listSamplesForUser(\"%s\").", user));
+
       return samples.getObjects();
 
     } catch (UserFailureException ufe) {
       logger.error(String.format("Could not fetch samples of user %s. Does this user exist in openBIS?", user));
-      logger.warn("listSamplesForUser(String user) returned null.");
+      logger.warn(String.format("listSamplesForUser(\"%s\") returned null.", user));
       return null;
     }
   }
@@ -801,44 +850,51 @@ public class OpenBisClient implements IOpenBisClient {
   /**
    * Function to retrieve all samples of a given space
    *
-   * @param spaceIdentifier identifier of the openBIS space
+   * @param spaceCode identifier of the openBIS space
    * @return list with all samples of the given space
    */
   @Override
-  public List<Sample> getSamplesofSpace(String spaceIdentifier) {
+  public List<Sample> getSamplesOfSpace(String spaceCode) {
     ensureLoggedIn();
 
     try {
-      SampleSearchCriteria sampleSearchCriteria = new SampleSearchCriteria();
-      sampleSearchCriteria.withSpace().withCode().thatEquals(spaceIdentifier);
+      SampleSearchCriteria ssc = new SampleSearchCriteria();
+      ssc.withSpace().withCode().thatEquals(spaceCode);
 
-      SearchResult<Sample> samplesOfExperiment = v3.searchSamples(sessionToken, sampleSearchCriteria, fetchSamplesCompletely());
-      return samplesOfExperiment.getObjects();
+      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
+
+      if (samples.getTotalCount() == 0)
+        logger.info(String.format("No samples found with getSamplesOfSpace(\"%s\").", spaceCode));
+
+      return samples.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch samples. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getSamplesofSpace(String spaceIdentifier) returned null.");
+      logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getSamplesofSpace(\"%s\") returned null.", spaceCode));
       return null;
     }
   }
 
   @Override
-  public List<Sample> getSamplesOfProject(String projIdentifier) {
+  public List<Sample> getSamplesOfProject(String projectCodeOrIdentifier) {
     ensureLoggedIn();
 
     try {
-      SampleSearchCriteria sampleSearchCriteria = new SampleSearchCriteria();
-      sampleSearchCriteria.withOrOperator();
-      sampleSearchCriteria.withExperiment().withProject().withCode().thatEquals(projIdentifier);
-      sampleSearchCriteria.withExperiment().withProject().withId().thatEquals(new ProjectIdentifier(projIdentifier));
+      SampleSearchCriteria ssc = new SampleSearchCriteria();
+      ssc.withOrOperator();
+      ssc.withExperiment().withProject().withCode().thatEquals(projectCodeOrIdentifier);
+      ssc.withExperiment().withProject().withId().thatEquals(new ProjectIdentifier(projectCodeOrIdentifier));
 
-      SearchResult<Sample> samples = v3.searchSamples(sessionToken, sampleSearchCriteria, fetchSamplesCompletely());
+      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
+
+      if (samples.getTotalCount() == 0)
+        logger.info(String.format("No samples found with getSamplesOfProject(\"%s\").", projectCodeOrIdentifier));
 
       return samples.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch samples. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getSamplesOfProject(String projIdentifier) returned null.");
+      logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getSamplesOfProject(\"%s\") returned null.", projectCodeOrIdentifier));
       return null;
     }
   }
@@ -848,11 +904,11 @@ public class OpenBisClient implements IOpenBisClient {
    * ch.systemsx.cisd.common.exceptions.UserFailureException if wrong identifier given TODO Should
    * we catch it and throw an illegalargumentexception instead? would be a lot clearer in my opinion
    *
-   * @param experimentIdentifier identifier/code (both should work) of the openBIS experiment
+   * @param experimentCodeOrIdentifier identifier/code (both should work) of the openBIS experiment
    * @return list with all samples of the given experiment
    */
   @Override
-  public List<Sample> getSamplesofExperiment(String experimentCodeOrIdentifier) {
+  public List<Sample> getSamplesOfExperiment(String experimentCodeOrIdentifier) {
     ensureLoggedIn();
 
     try {
@@ -866,12 +922,12 @@ public class OpenBisClient implements IOpenBisClient {
       SearchResult<Sample> samplesOfExperiment = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
 
       if (samplesOfExperiment.getTotalCount() == 0)
-        logger.warn(String.format("No samples found with getSamplesofExperiment(\"%s\").", experimentCodeOrIdentifier));
+        logger.info(String.format("No samples found with getSamplesofExperiment(\"%s\").", experimentCodeOrIdentifier));
 
       return samplesOfExperiment.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch samples. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn(String.format("getSamplesofExperiment(\"%s\") returned null.", experimentCodeOrIdentifier));
       return null;
     }
@@ -895,13 +951,13 @@ public class OpenBisClient implements IOpenBisClient {
       SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
 
       if (samples.getTotalCount() == 0)
-        logger.warn(String.format("No samples found with getSample(\"%s\").", sampleCode));
+        logger.info(String.format("No samples found with getSampleByCode(\"%s\").", sampleCode));
 
       return samples.getObjects().isEmpty() ? null : samples.getObjects().get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch samples. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn(String.format("  getSampleByCode(\"%s\") returned null.", sampleCode));
+      logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getSampleByCode(\"%s\") returned null.", sampleCode));
       return null;
     }
   }
@@ -917,13 +973,13 @@ public class OpenBisClient implements IOpenBisClient {
       SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
 
       if (samples.getTotalCount() == 0)
-        logger.warn(String.format("No samples found with getSampleByIdentifier(\"%s\").", sampleIdentifier));
+        logger.info(String.format("No samples found with getSampleByIdentifier(\"%s\").", sampleIdentifier));
 
       return samples.getObjects().isEmpty() ? null : samples.getObjects().get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch samples. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn(String.format("  getSampleByIdentifier(\"%s\") returned null.", sampleIdentifier));
+      logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getSampleByIdentifier(\"%s\") returned null.", sampleIdentifier));
       return null;
     }
   }
@@ -931,66 +987,76 @@ public class OpenBisClient implements IOpenBisClient {
   /**
    * Function to get a sample with its parents and children
    *
-   * @param sampCode code of the openBIS sample
+   * @param sampleCode code of the openBIS sample
    * @return sample
    */
   @Override
-  public List<Sample> getSamplesWithParentsAndChildren(String sampCode) {
+  public List<Sample> getSamplesWithParentsAndChildren(String sampleCode) {
     // ToDo: Unclear if parents and children should be fetched or directly included into the list.
     ensureLoggedIn();
 
     try {
-      SampleSearchCriteria sampleSearchCriteria = new SampleSearchCriteria();
-      sampleSearchCriteria.withCode().thatEquals(sampCode);
+      SampleSearchCriteria ssc = new SampleSearchCriteria();
+      ssc.withCode().thatEquals(sampleCode);
 
       SampleFetchOptions sampleFetchOptions = fetchSamplesCompletely();
       sampleFetchOptions.withChildrenUsing(fetchSamplesCompletely());
       sampleFetchOptions.withParentsUsing(fetchSamplesCompletely());
 
-      SearchResult<Sample> samples = v3.searchSamples(sessionToken, sampleSearchCriteria, fetchSamplesCompletely());
+      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
+
+      if (samples.getTotalCount() == 0)
+        logger.info(String.format("No samples found with getSamplesWithParentsAndChildren(\"%s\").", sampleCode));
 
       return samples.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch samples. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getSamplesWithParentsAndChildren(String sampCode) returned null.");
+      logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getSamplesWithParentsAndChildren(\"%s\") returned null.", sampleCode));
       return null;
     }
   }
 
   @Override
-  public List<Sample> getSamplesOfType(String type) {
+  public List<Sample> getSamplesOfType(String typeCode) {
     ensureLoggedIn();
 
     try {
-      SampleSearchCriteria sampleSearchCriteria = new SampleSearchCriteria();
-      sampleSearchCriteria.withType().withCode().thatEquals(type);
+      SampleSearchCriteria ssc = new SampleSearchCriteria();
+      ssc.withType().withCode().thatEquals(typeCode);
 
-      SearchResult<Sample> samples = v3.searchSamples(sessionToken, sampleSearchCriteria, fetchSamplesCompletely());
+      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
+
+      if (samples.getTotalCount() == 0)
+        logger.info(String.format("No samples found with getSamplesOfType(\"%s\").", typeCode));
+
       return samples.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch samples. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getSamplesWithParentsAndChildren(String sampCode) returned null.");
+      logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getSamplesOfType(\"%s\") returned null.", typeCode));
       return null;
     }
   }
 
   @Override
-  public SampleType getSampleTypeByString(String sampleType) {
+  public SampleType getSampleTypeByString(String typeCode) {
     ensureLoggedIn();
 
     try {
-      SampleTypeSearchCriteria sc = new SampleTypeSearchCriteria();
-      sc.withCode().thatEquals(sampleType);
+      SampleTypeSearchCriteria stsc = new SampleTypeSearchCriteria();
+      stsc.withCode().thatEquals(typeCode);
 
-      SearchResult<SampleType> sampleTypes = v3.searchSampleTypes(sessionToken, sc, fetchSampleTypesCompletely());
+      SearchResult<SampleType> sampleTypes = v3.searchSampleTypes(sessionToken, stsc, fetchSampleTypesCompletely());
 
-     return sampleTypes.getObjects().isEmpty() ? null : sampleTypes.getObjects().get(0);
+      if (sampleTypes.getTotalCount() == 0)
+        logger.info(String.format("No sample types found with getSampleTypeByString(\"%s\").", typeCode));
+
+      return sampleTypes.getObjects().isEmpty() ? null : sampleTypes.getObjects().get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch sample types. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getSampleTypeByString(String sampleType) returned null.");
+      logger.error("Could not fetch samples types. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getSampleTypeByString(\"%s\") returned null.", typeCode));
       return null;
     }
   }
@@ -1007,15 +1073,18 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       SearchResult<SampleType> sampleTypes = v3.searchSampleTypes(sessionToken, new SampleTypeSearchCriteria(), fetchSampleTypesCompletely());
 
-      Map<String, SampleType> types = new HashMap<>();
+      if (sampleTypes.getTotalCount() == 0)
+        logger.info("No sample types found with getSampleTypes().");
+
+      Map<String, SampleType> codeToSampleType = new HashMap<>();
       for (SampleType t : sampleTypes.getObjects()) {
-        types.put(t.getCode(), t);
+        codeToSampleType.put(t.getCode(), t);
       }
 
-      return types;
+      return codeToSampleType;
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch sample types. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.error("Could not fetch samples types. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn("getSampleTypes() returned null.");
       return null;
     }
@@ -1034,11 +1103,15 @@ public class OpenBisClient implements IOpenBisClient {
 
     try {
       SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+
+      if (datasets.getTotalCount() == 0)
+        logger.info("No datasets found with listDatasets().");
+
       return datasets.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getSampleDatasets() returned null.");
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn("listDatasets() returned null.");
       return null;
     }
   }
@@ -1053,11 +1126,15 @@ public class OpenBisClient implements IOpenBisClient {
 
     try {
       SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+
+      if (datasets.getTotalCount() == 0)
+        logger.info(String.format("No datasets found with listDatasetsForUser(\"%s\").", user));
+
       return datasets.getObjects();
 
     } catch (UserFailureException ufe) {
       logger.error(String.format("Could not fetch datasets of user %s. Does this user exist in openBIS?", user));
-      logger.warn("Returned empty list.");
+      logger.warn(String.format("listDatasetsForUser(\"%s\") returned null.", user));
       return null;
     }
   }
@@ -1065,24 +1142,27 @@ public class OpenBisClient implements IOpenBisClient {
   /**
    * Function to list all datasets of a specific openBIS space
    *
-   * @param spaceIdentifier identifier of the openBIS space
+   * @param spaceCode identifier of the openBIS space
    * @return list with all datasets of the given space
    */
   @Override
-  public List<DataSet> getDataSetsOfSpaceByIdentifier(String spaceIdentifier) {
+  public List<DataSet> getDataSetsOfSpace(String spaceCode) {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria sc = new DataSetSearchCriteria();
-      sc.withSample().withSpace().withCode().thatEquals(spaceIdentifier);
+      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
+      dssc.withSample().withSpace().withCode().thatEquals(spaceCode);
 
-      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, dssc, fetchDataSetsCompletely());
 
-      return dataSets.getObjects();
+      if (datasets.getTotalCount() == 0)
+        logger.info(String.format("No datasets found with getDataSetsOfSpace(\"%s\").", spaceCode));
+
+      return datasets.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getDataSetsOfSpaceByIdentifier(String spaceIdentifier) returned null.");
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getDataSetsOfSpace(\"%s\") returned null.", spaceCode));
       return null;
     }
   }
@@ -1098,15 +1178,19 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria dsc = new DataSetSearchCriteria();
-      dsc.withSample().withProject().withCodes().thatIn( projects.stream().map(Project::getCode).collect(Collectors.toList()) );
+      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
+      dssc.withSample().withProject().withCodes().thatIn( projects.stream().map(Project::getCode).collect(Collectors.toList()) );
 
       SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+
+      if (datasets.getTotalCount() == 0)
+        logger.info(String.format("No datasets found with getDataSetsOfProjects(\"%s\").", projects));
+
       return datasets.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getDataSetsOfProjects(List<Project> projects) returned null.");
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getDataSetsOfProjects(\"%s\") returned null.", projects));
       return null;
     }
   }
@@ -1114,25 +1198,29 @@ public class OpenBisClient implements IOpenBisClient {
   /**
    * Function to list all datasets of a specific openBIS project
    *
-   * @param projectIdentifier identifier of the openBIS project
+   * @param projectCodeIdentifier identifier of the openBIS project
    * @return list with all datasets of the given project
    */
   @Override
-  public List<DataSet> getDataSetsOfProjectByIdentifier(String projectIdentifier) {
+  public List<DataSet> getDataSetsOfProject(String projectCodeIdentifier) {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria dsc = new DataSetSearchCriteria();
-      dsc.withOrOperator();
-      dsc.withSample().withProject().withCode().thatEquals(projectIdentifier);
-      dsc.withSample().withProject().withId().thatEquals( new ProjectIdentifier(projectIdentifier) );
+      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
+      dssc.withOrOperator();
+      dssc.withSample().withProject().withCode().thatEquals(projectCodeIdentifier);
+      dssc.withSample().withProject().withId().thatEquals( new ProjectIdentifier(projectCodeIdentifier) );
 
       SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+
+      if (datasets.getTotalCount() == 0)
+        logger.info(String.format("No datasets found with getDataSetsOfProject(\"%s\").", projectCodeIdentifier));
+
       return datasets.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getDataSetsOfProjectByIdentifier(String projectIdentifier) returned null.");
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getDataSetsOfProjects(\"%s\") returned null.", projectCodeIdentifier));
       return null;
     }
   }
@@ -1148,15 +1236,19 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria dsc = new DataSetSearchCriteria();
-      dsc.withExperiment().withCodes().thatIn( experimentCodes );
+      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
+      dssc.withExperiment().withCodes().thatIn( experimentCodes );
 
       SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+
+      if (datasets.getTotalCount() == 0)
+        logger.info(String.format("No datasets found with listDataSetsForExperiments(\"%s\").", experimentCodes));
+
       return datasets.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("listDataSetsForExperiments(List<String> experimentCodes) returned null.");
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("listDataSetsForExperiments(\"%s\") returned null.", experimentCodes));
       return null;
     }
   }
@@ -1172,16 +1264,19 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria sc = new DataSetSearchCriteria();
-      sc.withExperiment().withId().thatEquals(new ExperimentIdentifier(experimentIdentifier));
+      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
+      dssc.withExperiment().withIdentifier().thatEquals(experimentIdentifier);
 
-      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, dssc, fetchDataSetsCompletely());
 
-      return dataSets.getObjects();
+      if (datasets.getTotalCount() == 0)
+        logger.info(String.format("No datasets found with getDataSetsOfExperimentByIdentifier(\"%s\").", experimentIdentifier));
+
+      return datasets.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getDataSetsOfExperimentByIdentifier(String experimentIdentifier) returned null.");
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getDataSetsOfExperimentByIdentifier(\"%s\") returned null.", experimentIdentifier));
       return null;
     }
   }
@@ -1198,16 +1293,19 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria sc = new DataSetSearchCriteria();
-      sc.withExperiment().withPermId().thatEquals(experimentPermID);
+      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
+      dssc.withExperiment().withPermId().thatEquals(experimentPermID);
 
-      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, dssc, fetchDataSetsCompletely());
 
-      return dataSets.getObjects();
+      if (datasets.getTotalCount() == 0)
+        logger.info(String.format("No datasets found with getDataSetsOfExperiment(\"%s\").", experimentPermID));
+
+      return datasets.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getDataSetsOfExperiment(String experimentPermID) returned null.");
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getDataSetsOfExperiment(\"%s\") returned null.", experimentPermID));
       return null;
     }
   }
@@ -1223,26 +1321,23 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria dsc = new DataSetSearchCriteria();
-      dsc.withSample().withCodes().thatIn( sampleCodes );
+      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
+      dssc.withSample().withCodes().thatIn( sampleCodes );
 
       SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+
+      if (datasets.getTotalCount() == 0)
+        logger.info(String.format("No datasets found with listDataSetsForSamples(\"%s\").", sampleCodes));
+
       return datasets.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("listDataSetsForSamples(List<String> sampleCodes) returned null.");
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("listDataSetsForSamples(\"%s\") returned null.", sampleCodes));
       return null;
     }
   }
 
-  /**
-   * Function to list all datasets of a specific sample (watch out there are different dataset
-   * classes)
-   *
-   * @param sampleCodeOrIdentifier code or identifier of the openBIS sample
-   * @return list with all datasets of the given sample
-   */
   @Override
   public List<DataSet> getDataSetsOfSample(String sampleCodeOrIdentifier) {
     if (sampleCodeOrIdentifier.startsWith("/"))
@@ -1256,17 +1351,19 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria ssc = new DataSetSearchCriteria();
-      ssc.withOrOperator();
-      ssc.withSample().withCode().thatEquals(sampleCode);
+      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
+      dssc.withSample().withCode().thatEquals(sampleCode);
 
-      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, ssc, fetchDataSetsCompletely());
+      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, dssc, fetchDataSetsCompletely());
 
-      return dataSets.getObjects();
+      if (datasets.getTotalCount() == 0)
+        logger.info(String.format("No datasets found with getDataSetsOfSampleByCode(\"%s\").", sampleCode));
+
+      return datasets.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getDataSetsOfSample(String sampleCode) returned null.");
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getDataSetsOfSampleByCode(\"%s\") returned null.", sampleCode));
       return null;
     }
   }
@@ -1284,35 +1381,40 @@ public class OpenBisClient implements IOpenBisClient {
 
     try {
       DataSetSearchCriteria ssc = new DataSetSearchCriteria();
-      ssc.withOrOperator();
       ssc.withSample().withIdentifier().thatEquals(sampleIdentifier);
 
-      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, ssc, fetchDataSetsCompletely());
+      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, ssc, fetchDataSetsCompletely());
 
-      return dataSets.getObjects();
+      if (datasets.getTotalCount() == 0)
+        logger.info(String.format("No datasets found with getDataSetsOfSampleByIdentifier(\"%s\").", sampleIdentifier));
+
+      return datasets.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getDataSetsOfSample(String sampleCode) returned null.");
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getDataSetsOfSampleByIdentifier(\"%s\") returned null.", sampleIdentifier));
       return null;
     }
   }
 
   @Override
-  public List<DataSet> getDataSetsByType(String type) {
+  public List<DataSet> getDataSetsByType(String typeCode) {
     ensureLoggedIn();
 
     try {
       DataSetSearchCriteria sc = new DataSetSearchCriteria();
-      sc.withType().withCode().thatEquals(type);
+      sc.withType().withCode().thatEquals(typeCode);
 
-      SearchResult<DataSet> dataSets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
+      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
 
-      return dataSets.getObjects();
+      if (datasets.getTotalCount() == 0)
+        logger.info(String.format("No datasets found with getDataSetsByType(\"%s\").", typeCode));
+
+      return datasets.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch datasets. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getDataSetsByType(String type) returned null.");
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getDataSetsByType(\"%s\") returned null.", typeCode));
       return null;
     }
   }
@@ -1329,13 +1431,15 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      VocabularySearchCriteria vsc = new VocabularySearchCriteria();
-      SearchResult<Vocabulary> vocabularies = v3.searchVocabularies(sessionToken, vsc, fetchVocabularyCompletely());
+      SearchResult<Vocabulary> vocabularies = v3.searchVocabularies(sessionToken, new VocabularySearchCriteria(), fetchVocabularyCompletely());
+
+      if (vocabularies.getTotalCount() == 0)
+        logger.info("No vocabularies found with listVocabulary().");
 
       return vocabularies.getObjects();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch vocabularies. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.error("Could not fetch vocabularies. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn("listVocabulary() returned null.");
       return null;
     }
@@ -1349,14 +1453,16 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn(user);
 
     try {
-      VocabularySearchCriteria vsc = new VocabularySearchCriteria();
-      SearchResult<Vocabulary> vocabularies = v3.searchVocabularies(sessionToken, vsc, fetchVocabularyCompletely());
+      SearchResult<Vocabulary> vocabularies = v3.searchVocabularies(sessionToken, new VocabularySearchCriteria(), fetchVocabularyCompletely());
+
+      if (vocabularies.getTotalCount() == 0)
+        logger.info(String.format("No vocabularies found with listVocabularyForUser(\"%s\").", user));
 
       return vocabularies.getObjects();
 
     } catch (UserFailureException ufe) {
       logger.error(String.format("Could not fetch vocabularies of user %s. Does this user exist in openBIS?", user));
-      logger.warn("listVocabularyForUser(String user) returned null.");
+      logger.warn(String.format("listVocabularyForUser(\"%s\") returned null.", user));
       return null;
     }
   }
@@ -1369,13 +1475,16 @@ public class OpenBisClient implements IOpenBisClient {
       VocabularySearchCriteria vsc = new VocabularySearchCriteria();
       vsc.withCode().thatEquals(vocabularyCode);
 
-      SearchResult<Vocabulary> vocabulary = v3.searchVocabularies(sessionToken, vsc, fetchVocabularyCompletely());
+      SearchResult<Vocabulary> vocabularies = v3.searchVocabularies(sessionToken, vsc, fetchVocabularyCompletely());
 
-      return vocabulary.getObjects().isEmpty() ? null : vocabulary.getObjects().get(0);
+      if (vocabularies.getTotalCount() == 0)
+        logger.info(String.format("No vocabularies found with getVocabulary(\"%s\").", vocabularyCode));
+
+      return vocabularies.getObjects().isEmpty() ? null : vocabularies.getObjects().get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch vocabularies. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getVocabulary(String vocabularyCode) returned null.");
+      logger.error("Could not fetch vocabularies. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getVocabulary(\"%s\") returned null.", vocabularyCode));
       return null;
     }
   }
@@ -1414,8 +1523,8 @@ public class OpenBisClient implements IOpenBisClient {
       }
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch property type. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("listVocabularyTermsForProperty(PropertyType property) returned null.");
+      logger.error("Could not fetch property types. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("listVocabularyTermsForProperty(\"%s\") returned null.", property.toString()));
       return null;
     }
   }
@@ -1437,13 +1546,16 @@ public class OpenBisClient implements IOpenBisClient {
 
       SearchResult<Vocabulary> vocabularies = v3.searchVocabularies(sessionToken,vsc, fetchVocabularyCompletely());
 
-      if (vocabularies.getObjects().isEmpty()) { return codesAndLabels; }
+      if (vocabularies.getObjects().isEmpty()) {
+        logger.info(String.format("No vocabularies found with getVocabCodesAndLabelsForVocab(\"%s\").", vocabularyCode));
+        return codesAndLabels;
+      }
 
       Vocabulary vocabulary = vocabularies.getObjects().get(0);
       try {
           for (VocabularyTerm vt : vocabulary.getTerms()) {
-            codesAndLabels.put( vt.getLabel(), vt.getCode() );  // Note: Why first label and then code?
-            // codesAndLabels.put( vt.getCode(), vt.getLabel() );
+            // codesAndLabels.put( vt.getLabel(), vt.getCode() );  // Note: Why first label and then code?
+            codesAndLabels.put( vt.getCode(), vt.getLabel() );
           }
           return codesAndLabels;
 
@@ -1453,8 +1565,8 @@ public class OpenBisClient implements IOpenBisClient {
       }
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch vocabulary. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getVocabCodesAndLabelsForVocab(String vocabularyCode) returned null.");
+      logger.error("Could not fetch vocabulary. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getVocabCodesAndLabelsForVocab(\"%s\") returned null.", vocabularyCode));
       return null;
     }
   }
@@ -1477,7 +1589,10 @@ public class OpenBisClient implements IOpenBisClient {
 
       SearchResult<Vocabulary> vocabularies = v3.searchVocabularies(sessionToken, vsc, fetchVocabularyCompletely());
 
-      if (vocabularies.getObjects().isEmpty()) { return vocabCodes; }
+      if (vocabularies.getObjects().isEmpty()) {
+        logger.info(String.format("No vocabularies found with getVocabCodesForVocab(\"%s\").", vocabularyCode));
+        return vocabCodes;
+      }
 
       Vocabulary vocabulary = vocabularies.getObjects().get(0);
       try {
@@ -1490,8 +1605,8 @@ public class OpenBisClient implements IOpenBisClient {
       }
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch vocabulary. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getVocabCodesForVocab(String vocabularyCode) returned null.");
+      logger.error("Could not fetch vocabularies. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getVocabCodesForVocab(\"%s\") returned null.", vocabularyCode));
       return null;
     }
   }
@@ -1500,29 +1615,27 @@ public class OpenBisClient implements IOpenBisClient {
    * Function to get the label of a CV item for some property
    *
    * @param propertyType the property type
-   * @param propertyValue the property value
+   * @param vocabularyTermCode the property value
    * @return Label of CV item
    */
   @Override
-  public String getCVLabelForProperty(PropertyType propertyType, String propertyValue) {
+  public String getCVLabelForProperty(PropertyType propertyType, String vocabularyTermCode) {
     ensureLoggedIn();
 
     try {
       VocabularyTermSearchCriteria vtsc = new VocabularyTermSearchCriteria();
-      vtsc.withCode().thatEquals(propertyValue);
+      vtsc.withCode().thatEquals(vocabularyTermCode);
 
       SearchResult<VocabularyTerm> vocabularyTerms = v3.searchVocabularyTerms(sessionToken, vtsc, new VocabularyTermFetchOptions());
 
-      if (vocabularyTerms.getObjects().isEmpty()) {
-        logger.warn(String.format("Seems like vocabulary term %s does not exist anymore. Returning null.", propertyValue));
-        return null;
-      }
+      if (vocabularyTerms.getTotalCount() == 0)
+        logger.info(String.format("No vocabulary terms found with getCVLabelForProperty(\"%s\").", vocabularyTermCode));
 
-      return vocabularyTerms.getObjects().get(0).getLabel();
+      return vocabularyTerms.getObjects().isEmpty() ? null : vocabularyTerms.getObjects().get(0).getLabel();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch vocabulary terms. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getCVLabelForProperty(PropertyType propertyType, String propertyValue) returned null.");
+      logger.error("Could not fetch vocabulary terms. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getCVLabelForProperty(%s, \"%s\") returned null.", propertyType, vocabularyTermCode));
       return null;
     }
   }
@@ -1568,14 +1681,14 @@ public class OpenBisClient implements IOpenBisClient {
       return spaceCode != null && projectCode != null && projects.getTotalCount() > 0;
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch projects. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("projectExists(String spaceCode, String projectCode) returned false.");
+      logger.error("Could not fetch projects. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("projectExists(\"%s\", \"%s\") returned false.", spaceCode, projectCode));
       return false;
     }
   }
 
   public boolean projectExists(String projectCodeOrIdentifier) {
-    Project project = getProject(projectCodeOrIdentifier);
+    Project project = getProject(projectCodeOrIdentifier);  // ensureLoggedIn is called in getProject(String)
 
     return projectCodeOrIdentifier != null && project != null;
   }
@@ -1595,23 +1708,23 @@ public class OpenBisClient implements IOpenBisClient {
       return spaceCode != null && projectCode != null && experimentCode != null && experiments.getTotalCount() != 0;
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch experiments. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("expExists(String spaceCode, String projectCode, String experimentCode) returned false.");
+      logger.error("Could not fetch experiments. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("expExists(\"%s\", \"%s\", \"%s\") returned false.", spaceCode, projectCode, experimentCode));
       return false;
     }
   }
 
   public boolean experimentExists(String experimentCodeOrIdentifier) {
-    Experiment experiment = getExperiment(experimentCodeOrIdentifier);
+    Experiment experiment = getExperiment(experimentCodeOrIdentifier);   // ensureLoggedIn() is called in getExperiment(String)
 
     return experimentCodeOrIdentifier != null && experiment != null;
   }
 
   @Override
   public boolean sampleExists(String sampleCodeOrIdentifier) {
-    Sample sample = getSample(sampleCodeOrIdentifier);
+    Sample sample = getSample(sampleCodeOrIdentifier);  // ensureLoggedIn() is called in getSample(String)
 
-    return sampleCodeOrIdentifier != null && sample != null;  // ensureLoggedIn() is called in getSample
+    return sampleCodeOrIdentifier != null && sample != null;
   }
 
 
@@ -1639,11 +1752,11 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       SpaceCreation space = prepareSpaceCreation(code);
 
-      return v3.createSpaces(sessionToken, Arrays.asList(space)).get(0);
+      return v3.createSpaces(sessionToken, Collections.singletonList(space)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create space. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createSpace(String spaceCode) returned null.");
+      logger.error("Could not create space. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createSpace(\"%s\") returned null.", code));
       return null;
     }
   }
@@ -1654,11 +1767,12 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       SpaceCreation space = prepareSpaceCreation(code, description);
 
-      return v3.createSpaces(sessionToken, Arrays.asList(space)).get(0);
+      return v3.createSpaces(sessionToken, Collections.singletonList(space)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create space. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createSpace(String spaceCode, String description) returned null.");
+      logger.error("Could not create space. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createSpace(\"%s\", \"%s\") returned null.", code, description));
+
       return null;
     }
   }
@@ -1694,11 +1808,11 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       ProjectCreation project = prepareProjectCreation(code);
 
-      return v3.createProjects(sessionToken, Arrays.asList(project)).get(0);
+      return v3.createProjects(sessionToken, Collections.singletonList(project)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create project. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createProject(String code) returned null.");
+      logger.error("Could not create project. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createProject(\"%s\") returned null.", code));
       return null;
     }
   }
@@ -1709,11 +1823,11 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       ProjectCreation project = prepareProjectCreation(code, space);
 
-      return v3.createProjects(sessionToken, Arrays.asList(project)).get(0);
+      return v3.createProjects(sessionToken, Collections.singletonList(project)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create project. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createProject(String code, String space) returned null.");
+      logger.error("Could not create project. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createProject(\"%s\", \"%s\") returned null.", code, space));
       return null;
     }
   }
@@ -1724,11 +1838,11 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       ProjectCreation project = prepareProjectCreation(code, space, description);
 
-      return v3.createProjects(sessionToken, Arrays.asList(project)).get(0);
+      return v3.createProjects(sessionToken, Collections.singletonList(project)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create project. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createProject(String code, String space, String description) returned null.");
+      logger.error("Could not create project. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createProject(\"%s\", \"%s\", \"%s\") returned null.", code, space, description));
       return null;
     }
   }
@@ -1740,7 +1854,7 @@ public class OpenBisClient implements IOpenBisClient {
       return v3.createProjects(sessionToken, projects);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create projects. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.error("Could not create projects. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn("createProjects(List<ProjectCreation>) returned null.");
       return null;
     }
@@ -1799,11 +1913,11 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       ExperimentCreation experiment = prepareExperimentCreation(code);
 
-      return v3.createExperiments(sessionToken, Arrays.asList(experiment)).get(0);
+      return v3.createExperiments(sessionToken, Collections.singletonList(experiment)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create experiment. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createExperiment(String experimentCode) returned null.");
+      logger.error("Could not create experiment. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createExperiment(\"%s\") returned null.", code));
       return null;
     }
   }
@@ -1814,11 +1928,11 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       ExperimentCreation experiment = prepareExperimentCreation(code, properties);
 
-      return v3.createExperiments(sessionToken, Arrays.asList(experiment)).get(0);
+      return v3.createExperiments(sessionToken, Collections.singletonList(experiment)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create experiment. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createExperiment(String experimentCode, Map<String, String> properties) returned null.");
+      logger.error("Could not create experiment. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createExperiment(\"%s\", \"%s\") returned null.", code, properties));
       return null;
     }
   }
@@ -1829,11 +1943,11 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       ExperimentCreation experiment = prepareExperimentCreation(code, type, properties);
 
-      return v3.createExperiments(sessionToken, Arrays.asList(experiment)).get(0);
+      return v3.createExperiments(sessionToken, Collections.singletonList(experiment)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create experiment. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createExperiment(String experimentCode, String type, Map<String, String> properties) returned null.");
+      logger.error("Could not create experiment. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createExperiment(\"%s\", \"%s\", \"%s\") returned null.", code, type, properties));
       return null;
     }
   }
@@ -1844,12 +1958,12 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       ExperimentCreation experiment = prepareExperimentCreation(code, type, projectIdentifier, properties);
 
-      return v3.createExperiments(sessionToken, Arrays.asList(experiment)).get(0);
+      return v3.createExperiments(sessionToken, Collections.singletonList(experiment)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create experiment. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createExperiment(String code, String type, String projectIdentifier, " +
-                  "Map<String, String> properties) returned null.");
+      logger.error("Could not create experiment. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createExperiment(\"%s\", \"%s\", \"%s\", , \"%s\") returned null.",
+                                code, type, projectIdentifier, properties));
       return null;
     }
   }
@@ -1860,12 +1974,12 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       ExperimentCreation experiment = prepareExperimentCreation(code, type, space, project, properties);
 
-      return v3.createExperiments(sessionToken, Arrays.asList(experiment)).get(0);
+      return v3.createExperiments(sessionToken, Collections.singletonList(experiment)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create experiment. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createExperiment(String code, String type, String space, String project, " +
-                  "Map<String, String> properties) returned null.");
+      logger.error("Could not create experiment. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createExperiment(\"%s\", \"%s\", \"%s\", \"%s\", \"%s\") returned null.",
+                                code, type, space, project, properties));
       return null;
     }
   }
@@ -1877,7 +1991,7 @@ public class OpenBisClient implements IOpenBisClient {
       return v3.createExperiments(sessionToken, experiments);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create experiments. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.error("Could not create experiments. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn("createExperiment(List<ExperimentCreation>) returned null.");
       return null;
     }
@@ -1948,11 +2062,11 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       SampleCreation sample = prepareSampleCreation(code);
 
-      return v3.createSamples(sessionToken, Arrays.asList(sample)).get(0);
+      return v3.createSamples(sessionToken, Collections.singletonList(sample)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create sample. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createSample(String sampleCode) returned null.");
+      logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createSample(\"%s\") returned null.", code));
       return null;
     }
   }
@@ -1963,11 +2077,11 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       SampleCreation sample = prepareSampleCreation(code, properties);
 
-      return v3.createSamples(sessionToken, Arrays.asList(sample)).get(0);
+      return v3.createSamples(sessionToken, Collections.singletonList(sample)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create sample. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createSample(String sampleCode, Map<String, String> properties) returned null.");
+      logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createSample(\"%s\", \"%s\") returned null.", code, properties));
       return null;
     }
   }
@@ -1978,11 +2092,11 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       SampleCreation sample = prepareSampleCreation(code, type, properties);
 
-      return v3.createSamples(sessionToken, Arrays.asList(sample)).get(0);
+      return v3.createSamples(sessionToken, Collections.singletonList(sample)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create sample. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createSample(String code, String type, Map<String, String> properties) returned null.");
+      logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createSample(\"%s\", \"%s\", \"%s\") returned null.", code, type, properties));
       return null;
     }
   }
@@ -1993,12 +2107,12 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       SampleCreation sample = prepareSampleCreation(code, type, experimentIdentifier, properties);
 
-      return v3.createSamples(sessionToken, Arrays.asList(sample)).get(0);
+      return v3.createSamples(sessionToken, Collections.singletonList(sample)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create sample. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createSample(String code, String type, String experimentIdentifier, " +
-                  "Map<String, String> properties) returned null.");
+      logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createSample(\"%s\", \"%s\", \"%s\", \"%s\") returned null.",
+                                code, type, experimentIdentifier, properties));
       return null;
     }
   }
@@ -2010,12 +2124,12 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       SampleCreation sample = prepareSampleCreation(code, type, space, project, experiment, properties);
 
-      return v3.createSamples(sessionToken, Arrays.asList(sample)).get(0);
+      return v3.createSamples(sessionToken, Collections.singletonList(sample)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create sample. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createSample(String sampleCode, String type, String space, String project, " +
-                  "String experiment, Map<String, String> properties) returned null.");
+      logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createSample(\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\") returned null.",
+                                code, type, space, project, experiment, properties));
       return null;
     }
   }
@@ -2030,9 +2144,9 @@ public class OpenBisClient implements IOpenBisClient {
       return v3.createSamples(sessionToken, Arrays.asList(sample)).get(0);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create sample. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("createSample(String sampleCode, String type, String space, String project, " +
-                  "String experiment, List<SampleIdentifier> parents, Map<String, String> properties) returned null.");
+      logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createSample(\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\") returned null.",
+                                code, type, space, project, experiment, parents, properties));
       return null;
     }
   }
@@ -2044,7 +2158,7 @@ public class OpenBisClient implements IOpenBisClient {
       return v3.createSamples(sessionToken, samples);
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not create samples. Has the currently logged in user sufficient permissions in openBIS?");
+      logger.error("Could not create samples. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn("createSamples(List<SampleCreation>) returned null.");
       return null;
     }
@@ -2066,17 +2180,19 @@ public class OpenBisClient implements IOpenBisClient {
       SearchResult<PropertyAssignment> propertyAssignments =
               v3.searchPropertyAssignments(sessionToken, pasc, fetchPropertyAssignmentWithPropertyType());
 
-      if (propertyAssignments.getObjects().isEmpty()) { return propertyTypes; }
+      if (propertyAssignments.getObjects().isEmpty()) {
+        logger.info(String.format("No property assignments found with listPropertiesForType(%s).", type));
+        return propertyTypes;
+      }
 
       return propertyAssignments.getObjects().stream().map(PropertyAssignment::getPropertyType).collect(Collectors.toList());
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not fetch property assignments. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("listPropertiesForType(IEntityType type) returned null.");
+      logger.error("Could not fetch property assignments. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("listPropertiesForType(%s) returned null.", type));
       return null;
     }
   }
-
 
   /**
    * Returns all openBIS users directly assigned to a Space.
@@ -2104,14 +2220,15 @@ public class OpenBisClient implements IOpenBisClient {
           }
 
         } catch (NotFetchedException nfe) {
-          System.out.printf("RoleAssignment %s has no fetched space or user.", nfe.getMessage()); }
+          System.out.printf("RoleAssignment %s has no fetched space or user.", nfe.getMessage());
+        }
       }
 
       return members;
 
     }  catch (UserFailureException ufe) {
-      logger.error("Could not fetch role assignments. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("getSpaceMembers(String spaceCode) returned null.");
+      logger.error("Could not fetch role assignments. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getSpaceMembers(\"%s\") returned null.", spaceCode));
       return null;
     }
   }
@@ -2140,16 +2257,18 @@ public class OpenBisClient implements IOpenBisClient {
       return result.toString();
 
     } catch (UserFailureException ufe) {
-      logger.error("Could not execute custom as service. Has the currently logged in user sufficient permissions in openBIS?");
-      logger.warn("triggerIngestionService(String serviceName, Map<String, Object> parameters) returned null.");
+      logger.error("Could not execute custom AS service. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("triggerIngestionService(\"%s\", %s) returned null.", serviceName, parameters));
       return null;
     }
   }
 
   @Override
-  public String generateBarcode(String proj, int number_of_samples_offset) {
-    Project project = getProjectByIdentifier(proj);
+  public String generateBarcode(String projectIdentifier, int number_of_samples_offset) {
+    Project project = getProjectByIdentifier(projectIdentifier);
+
     int numberOfSamples = getSamplesOfProject(project.getCode()).size();
+
     String barcode = project.getCode() + String.format("%03d", (numberOfSamples + 1)) + "S";
     barcode += checksum(barcode);
 
@@ -2164,13 +2283,20 @@ public class OpenBisClient implements IOpenBisClient {
    * @return entity code as string in human readable text
    */
   @Override
-  public String openBIScodeToString(String entityCode) {
+  public String openbisCodeToString(String entityCode) {
     entityCode = WordUtils.capitalizeFully(entityCode.replace("_", " ").toLowerCase());
-    String edit_string = entityCode.replace("Ngs", "NGS").replace("Hla", "HLA")
-        .replace("Rna", "RNA").replace("Dna", "DNA").replace("Ms", "MS");
+
+    String edit_string = entityCode
+            .replace("Ngs", "NGS")
+            .replace("Hla", "HLA")
+            .replace("Rna", "RNA")
+            .replace("Dna", "DNA")
+            .replace("Ms", "MS");
+
     if (edit_string.startsWith("Q ")) {
       edit_string = edit_string.replace("Q ", "");
     }
+
     return edit_string;
   }
 
@@ -2219,7 +2345,7 @@ public class OpenBisClient implements IOpenBisClient {
 
   @Override
   public Map<Sample, List<Sample>> getParentMap(List<Sample> samples) {
-    // TODO samples must have fetched parents!
+    //Note: Samples must have fetched parents!
     Map<Sample, List<Sample>> parentMap = new HashMap<>();
     for (Sample sample : samples) {
       parentMap.put(sample, sample.getParents());
@@ -2243,7 +2369,7 @@ public class OpenBisClient implements IOpenBisClient {
 
   @Override
   public List<Sample> getChildrenSamples(Sample sample) {
-    // TODO unnecessary method in v3 api
+    //Note: Unnecessary method in v3 api
     return sample.getChildren();
   }
 
@@ -2261,17 +2387,14 @@ public class OpenBisClient implements IOpenBisClient {
     float numberExperiments = experiments.size();
 
     for (Experiment e : experiments) {
-      if (e.getProperties().keySet().contains("Q_CURRENT_STATUS")) {
+      if (e.getProperties().containsKey("Q_CURRENT_STATUS")) {
         if (e.getProperties().get("Q_CURRENT_STATUS").equals("FINISHED")) {
           finishedExperiments += 1.0;
-        } ;
+        }
       }
     }
-    if (numberExperiments > 0) {
-      return finishedExperiments / experiments.size();
-    } else {
-      return 0f;
-    }
+
+    return (numberExperiments > 0) ? finishedExperiments / experiments.size() : 0f;
   }
 
   /**
@@ -2285,21 +2408,17 @@ public class OpenBisClient implements IOpenBisClient {
   @Override
   public float computeProjectStatus(List<Experiment> experiments) {
     float finishedExperiments = 0f;
-
     float numberExperiments = experiments.size();
 
     for (Experiment e : experiments) {
-      if (e.getProperties().keySet().contains("Q_CURRENT_STATUS")) {
+      if (e.getProperties().containsKey("Q_CURRENT_STATUS")) {
         if (e.getProperties().get("Q_CURRENT_STATUS").equals("FINISHED")) {
           finishedExperiments += 1.0;
-        } ;
+        }
       }
     }
-    if (numberExperiments > 0) {
-      return finishedExperiments / experiments.size();
-    } else {
-      return 0f;
-    }
+
+    return (numberExperiments > 0) ? finishedExperiments / experiments.size() : 0f;
   }
 
   @Override
