@@ -1729,7 +1729,7 @@ public class OpenBisClient implements IOpenBisClient {
 
 
   /* ------------------------------------------------------------------------------------ */
-  /* ----- Entity creation -------------------------------------------------------------- */
+  /* ----- Space creation --------------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
   public SpaceCreation prepareSpaceCreation(String code) {
     SpaceCreation space = new SpaceCreation();
@@ -1777,14 +1777,23 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  public List<SpacePermId> createSpaces(List<SpaceCreation> spaces) {
+    ensureLoggedIn();
 
-  public ProjectCreation prepareProjectCreation(String code) {
-    ProjectCreation project = new ProjectCreation();
-    project.setCode(code);
+    try {
+      return v3.createSpaces(sessionToken, spaces);
 
-    return project;
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create spaces. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn("createSpaces(List<ProjectCreation>) returned null.");
+      return null;
+    }
   }
 
+
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Project creation ------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
   public ProjectCreation prepareProjectCreation(String code, String space) {
     ProjectCreation project = new ProjectCreation();
     project.setCode(code);
@@ -1800,21 +1809,6 @@ public class OpenBisClient implements IOpenBisClient {
     project.setSpaceId( new SpacePermId(space) );
 
     return project;
-  }
-
-  public ProjectPermId createProject(String code) {
-    ensureLoggedIn();
-
-    try {
-      ProjectCreation project = prepareProjectCreation(code);
-
-      return v3.createProjects(sessionToken, Collections.singletonList(project)).get(0);
-
-    } catch (UserFailureException ufe) {
-      logger.error("Could not create project. Currently logged in user has sufficient permissions in openBIS?");
-      logger.warn(String.format("createProject(\"%s\") returned null.", code));
-      return null;
-    }
   }
 
   public ProjectPermId createProject(String code, String space) {
@@ -1861,26 +1855,23 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
 
-  public ExperimentCreation prepareExperimentCreation(String code) {
-    ExperimentCreation experiment = new ExperimentCreation();
-    experiment.setCode(code);
-
-    return experiment;
-  }
-
-  public ExperimentCreation prepareExperimentCreation(String code, Map<String, String> properties) {
-    ExperimentCreation experiment = new ExperimentCreation();
-    experiment.setCode(code);
-    experiment.setProperties(properties);
-
-    return experiment;
-  }
-
-  public ExperimentCreation prepareExperimentCreation(String code, String type, Map<String, String> properties) {
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Experiment creation ---------------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
+  public ExperimentCreation prepareExperimentCreation(String code, String type, String projectIdentifier) {
     ExperimentCreation experiment = new ExperimentCreation();
     experiment.setCode(code);
     experiment.setTypeId( new EntityTypePermId(type) );
-    experiment.setProperties(properties);
+    experiment.setProjectId( new ProjectIdentifier(projectIdentifier) );
+
+    return experiment;
+  }
+
+  public ExperimentCreation prepareExperimentCreation(String code, String type, String space, String project) {
+    ExperimentCreation experiment = new ExperimentCreation();
+    experiment.setCode(code);
+    experiment.setTypeId( new EntityTypePermId(type) );
+    experiment.setProjectId( new ProjectIdentifier(space, project) );
 
     return experiment;
   }
@@ -1907,47 +1898,32 @@ public class OpenBisClient implements IOpenBisClient {
     return experiment;
   }
 
-  public ExperimentPermId createExperiment(String code) {
+  public ExperimentPermId createExperiment(String code, String type, String projectIdentifier) {
     ensureLoggedIn();
 
     try {
-      ExperimentCreation experiment = prepareExperimentCreation(code);
+      ExperimentCreation experiment = prepareExperimentCreation(code, type, projectIdentifier);
 
       return v3.createExperiments(sessionToken, Collections.singletonList(experiment)).get(0);
 
     } catch (UserFailureException ufe) {
       logger.error("Could not create experiment. Currently logged in user has sufficient permissions in openBIS?");
-      logger.warn(String.format("createExperiment(\"%s\") returned null.", code));
+      logger.warn(String.format("createExperiment(\"%s\", \"%s\", \"%s\") returned null.", code, type, projectIdentifier));
       return null;
     }
   }
 
-  public ExperimentPermId createExperiment(String code, Map<String, String> properties) {
+  public ExperimentPermId createExperiment(String code, String type, String space, String project) {
     ensureLoggedIn();
 
     try {
-      ExperimentCreation experiment = prepareExperimentCreation(code, properties);
+      ExperimentCreation experiment = prepareExperimentCreation(code, type, space, project);
 
       return v3.createExperiments(sessionToken, Collections.singletonList(experiment)).get(0);
 
     } catch (UserFailureException ufe) {
       logger.error("Could not create experiment. Currently logged in user has sufficient permissions in openBIS?");
-      logger.warn(String.format("createExperiment(\"%s\", \"%s\") returned null.", code, properties));
-      return null;
-    }
-  }
-
-  public ExperimentPermId createExperiment(String code, String type, Map<String, String> properties) {
-    ensureLoggedIn();
-
-    try {
-      ExperimentCreation experiment = prepareExperimentCreation(code, type, properties);
-
-      return v3.createExperiments(sessionToken, Collections.singletonList(experiment)).get(0);
-
-    } catch (UserFailureException ufe) {
-      logger.error("Could not create experiment. Currently logged in user has sufficient permissions in openBIS?");
-      logger.warn(String.format("createExperiment(\"%s\", \"%s\", \"%s\") returned null.", code, type, properties));
+      logger.warn(String.format("createExperiment(\"%s\", \"%s\", \"%s\", \"%s\") returned null.", code, type, space, project));
       return null;
     }
   }
@@ -1998,36 +1974,66 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
 
-  public SampleCreation prepareSampleCreation(String code) {
-    SampleCreation sample = new SampleCreation();
-    sample.setCode(code);
-
-    return sample;
-  }
-
-  public SampleCreation prepareSampleCreation(String code, Map<String, String> properties) {
-    SampleCreation sample = new SampleCreation();
-    sample.setCode(code);
-    sample.setProperties(properties);
-
-    return sample;
-  }
-
-  public SampleCreation prepareSampleCreation(String code, String type, Map<String, String> properties) {
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Sample creation -------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
+  public SampleCreation prepareSampleCreation(String code, String type, String space) {
     SampleCreation sample = new SampleCreation();
     sample.setCode(code);
     sample.setTypeId( new EntityTypePermId(type) );
-    sample.setProperties(properties);
+    sample.setSpaceId( new SpacePermId(space) );
 
     return sample;
   }
 
-  public SampleCreation prepareSampleCreation(String code, String type, String experimentIdentifier,
+  public SampleCreation prepareSampleCreation(String code, String type, String space, String project) {
+    SampleCreation sample = new SampleCreation();
+    sample.setCode(code);
+    sample.setTypeId( new EntityTypePermId(type) );
+    sample.setSpaceId( new SpacePermId(space) );
+    sample.setProjectId( new ProjectIdentifier(space, project) );
+
+    return sample;
+  }
+
+  public SampleCreation prepareSampleCreation(String code, String type, String space, String project, String experiment) {
+    SampleCreation sample = new SampleCreation();
+    sample.setCode(code);
+    sample.setTypeId( new EntityTypePermId(type) );
+    sample.setSpaceId( new SpacePermId(space) );
+    sample.setProjectId( new ProjectIdentifier(space, project) );
+    sample.setExperimentId( new ExperimentIdentifier(space, project, experiment) );
+
+    return sample;
+  }
+
+  public SampleCreation prepareSampleCreation(String code, String type, ExperimentIdentifier experimentIdentifier) {
+    SampleCreation sample = new SampleCreation();
+    sample.setCode(code);
+    sample.setTypeId( new EntityTypePermId(type) );
+    sample.setExperimentId( experimentIdentifier );
+
+    return sample;
+  }
+
+  public SampleCreation prepareSampleCreation(String code, String type, String space,
                                               Map<String, String> properties) {
     SampleCreation sample = new SampleCreation();
     sample.setCode(code);
     sample.setTypeId( new EntityTypePermId(type) );
-    sample.setExperimentId( new ExperimentIdentifier(experimentIdentifier) );
+    sample.setSpaceId( new SpacePermId(space) );
+    sample.setProperties(properties);
+
+    return sample;
+  }
+
+  public SampleCreation prepareSampleCreation(String code, String type, String space, String project,
+                                              Map<String, String> properties) {
+    SampleCreation sample = new SampleCreation();
+    sample.setCode(code);
+    sample.setTypeId( new EntityTypePermId(type) );
+    sample.setSpaceId( new SpacePermId(space) );
+    sample.setProjectId( new ProjectIdentifier(space, project) );
     sample.setProperties(properties);
 
     return sample;
@@ -2038,7 +2044,20 @@ public class OpenBisClient implements IOpenBisClient {
     SampleCreation sample = new SampleCreation();
     sample.setCode(code);
     sample.setTypeId( new EntityTypePermId(type) );
+    sample.setSpaceId( new SpacePermId(space) );
+    sample.setProjectId( new ProjectIdentifier(space, project) );
     sample.setExperimentId( new ExperimentIdentifier(space, project, experiment) );
+    sample.setProperties(properties);
+
+    return sample;
+  }
+
+  public SampleCreation prepareSampleCreation(String code, String type, ExperimentIdentifier experimentIdentifier,
+                                              Map<String, String> properties) {
+    SampleCreation sample = new SampleCreation();
+    sample.setCode(code);
+    sample.setTypeId( new EntityTypePermId(type) );
+    sample.setExperimentId( experimentIdentifier );
     sample.setProperties(properties);
 
     return sample;
@@ -2056,63 +2075,97 @@ public class OpenBisClient implements IOpenBisClient {
     return sample;
   }
 
-  public SamplePermId createSample(String code) {
+  public SamplePermId createSample(String code, String type, String space) {
     ensureLoggedIn();
 
     try {
-      SampleCreation sample = prepareSampleCreation(code);
+      SampleCreation sample = prepareSampleCreation(code, type, space);
 
       return v3.createSamples(sessionToken, Collections.singletonList(sample)).get(0);
 
     } catch (UserFailureException ufe) {
       logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
-      logger.warn(String.format("createSample(\"%s\") returned null.", code));
+      logger.warn(String.format("createSample(\"%s\", \"%s\", \"%s\") returned null.",
+              code, type, space));
       return null;
     }
   }
 
-  public SamplePermId createSample(String code, Map<String, String> properties) {
+  public SamplePermId createSample(String code, String type, String space, String project) {
     ensureLoggedIn();
 
     try {
-      SampleCreation sample = prepareSampleCreation(code, properties);
-
-      return v3.createSamples(sessionToken, Collections.singletonList(sample)).get(0);
-
-    } catch (UserFailureException ufe) {
-      logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
-      logger.warn(String.format("createSample(\"%s\", \"%s\") returned null.", code, properties));
-      return null;
-    }
-  }
-
-  public SamplePermId createSample(String code, String type, Map<String, String> properties) {
-    ensureLoggedIn();
-
-    try {
-      SampleCreation sample = prepareSampleCreation(code, type, properties);
-
-      return v3.createSamples(sessionToken, Collections.singletonList(sample)).get(0);
-
-    } catch (UserFailureException ufe) {
-      logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
-      logger.warn(String.format("createSample(\"%s\", \"%s\", \"%s\") returned null.", code, type, properties));
-      return null;
-    }
-  }
-
-  public SamplePermId createSample(String code, String type, String experimentIdentifier, Map<String, String> properties) {
-    ensureLoggedIn();
-
-    try {
-      SampleCreation sample = prepareSampleCreation(code, type, experimentIdentifier, properties);
+      SampleCreation sample = prepareSampleCreation(code, type, space, project);
 
       return v3.createSamples(sessionToken, Collections.singletonList(sample)).get(0);
 
     } catch (UserFailureException ufe) {
       logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn(String.format("createSample(\"%s\", \"%s\", \"%s\", \"%s\") returned null.",
-                                code, type, experimentIdentifier, properties));
+              code, type, space, project));
+      return null;
+    }
+  }
+
+  public SamplePermId createSample(String code, String type, String space, String project, String experiment) {
+    ensureLoggedIn();
+
+    try {
+      SampleCreation sample = prepareSampleCreation(code, type, space, project, experiment);
+
+      return v3.createSamples(sessionToken, Collections.singletonList(sample)).get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createSample(\"%s\", \"%s\", \"%s\", \"%s\", \"%s\") returned null.",
+              code, type, space, project, experiment));
+      return null;
+    }
+  }
+
+  public SamplePermId createSample(String code, String type, ExperimentIdentifier experimentIdentifier) {
+    ensureLoggedIn();
+
+    try {
+      SampleCreation sample = prepareSampleCreation(code, type, experimentIdentifier);
+
+      return v3.createSamples(sessionToken, Collections.singletonList(sample)).get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createSample(\"%s\", \"%s\", \"%s\") returned null.", code, type, experimentIdentifier));
+      return null;
+    }
+  }
+
+  public SamplePermId createSample(String code, String type, String space, Map<String, String> properties) {
+    ensureLoggedIn();
+
+    try {
+      SampleCreation sample = prepareSampleCreation(code, type, space, properties);
+
+      return v3.createSamples(sessionToken, Collections.singletonList(sample)).get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createSample(\"%s\", \"%s\", \"%s\", \"%s\") returned null.",
+              code, type, space, properties));
+      return null;
+    }
+  }
+
+  public SamplePermId createSample(String code, String type, String space, String project, Map<String, String> properties) {
+    ensureLoggedIn();
+
+    try {
+      SampleCreation sample = prepareSampleCreation(code, type, space, project, properties);
+
+      return v3.createSamples(sessionToken, Collections.singletonList(sample)).get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createSample(\"%s\", \"%s\", \"%s\", \"%s\", \"%s\") returned null.",
+              code, type, space, project, properties));
       return null;
     }
   }
@@ -2129,7 +2182,24 @@ public class OpenBisClient implements IOpenBisClient {
     } catch (UserFailureException ufe) {
       logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn(String.format("createSample(\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\") returned null.",
-                                code, type, space, project, experiment, properties));
+              code, type, space, project, experiment, properties));
+      return null;
+    }
+  }
+
+  public SamplePermId createSample(String code, String type, ExperimentIdentifier experimentIdentifier,
+                                   Map<String, String> properties) {
+    ensureLoggedIn();
+
+    try {
+      SampleCreation sample = prepareSampleCreation(code, type, experimentIdentifier, properties);
+
+      return v3.createSamples(sessionToken, Collections.singletonList(sample)).get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("createSample(\"%s\", \"%s\", \"%s\", \"%s\") returned null.",
+                                code, type, experimentIdentifier, properties));
       return null;
     }
   }
@@ -2141,7 +2211,7 @@ public class OpenBisClient implements IOpenBisClient {
     try {
       SampleCreation sample = prepareSampleCreation(code, type, space, project, experiment, parents, properties);
 
-      return v3.createSamples(sessionToken, Arrays.asList(sample)).get(0);
+      return v3.createSamples(sessionToken, Collections.singletonList(sample)).get(0);
 
     } catch (UserFailureException ufe) {
       logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
