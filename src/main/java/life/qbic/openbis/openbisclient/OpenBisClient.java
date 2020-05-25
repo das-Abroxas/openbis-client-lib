@@ -160,8 +160,8 @@ public class OpenBisClient implements IOpenBisClient {
   /* ----- login / logout  -------------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
   /**
-   * Logs in to the openBIS server with the user provided at instantiation of this class
-   *   and invalidates current session token if present.
+   * Logs in to the openBIS server with the credentials provided at instantiation of this class.
+   * Also invalidates the current session token if present.
    */
   @Override
   public void login() {
@@ -173,8 +173,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Logs into openBIS as the user of the provided username after logout if session of other user is still active.
+   * Logs in to the openBIS server as the user of the provided username.
    * A user with the provided username has to exist in the openBIS server.
+   * Also invalidates the current session token if present.
    * @param user openBIS user name
    */
   public void loginAsUser(String user) {
@@ -187,7 +188,7 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Checks if issued session token is still active in openBIS.
+   * Checks if issued session token is still active in the openBIS instance.
    * Session tokens are issued with {@link #login() login} and {@link #loginAsUser(String) loginAsUser}.
    * @return True if session token is still active else false
    */
@@ -201,7 +202,7 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Checks if session token for provided openBIS user is still active in openBIS.
+   * Checks if session token for provided openBIS user is still active in the openBIS instance.
    * Session tokens are issued with {@link #login() login} and {@link #loginAsUser(String) loginAsUser}.
    * @param user openBIS user name
    * @return True if session token of user is still active else false
@@ -215,8 +216,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Checks if issued session token is still active in openBIS.
-   * If not, one attempt is made to reconnect to the openBIS server with the user provided at instantiation of this class.
+   * Checks if issued session token is still active in the openBIS instance.
+   * If not, reconnection to the openBIS server is attempted once with the credentials
+   *   provided at instantiation of this class.
    */
   @Override
   public void ensureLoggedIn() {
@@ -226,8 +228,8 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Checks if issued session token is still active in openBIS.
-   * If not, one attempt is made to reconnect to the openBIS server with the username provided.
+   * Checks if session token for provided openBIS user is still active in the openBIS instance.
+   * If not, login to the openBIS server as the provided user is attempted once.
    */
   public void ensureLoggedIn(String user) {
     if (!this.loggedIn(user)) {
@@ -247,9 +249,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Returns whether a user is instance admin in openBIS.
+   * Returns whether a user is instance admin in the openBIS instance.
    * @param user openBIS user name
-   * @return true, if user is instance admin, false otherwise
+   * @return True if user is instance admin false otherwise
    * @throws IllegalArgumentException If no user with the provided name could be found.
    */
   @Override
@@ -285,8 +287,8 @@ public class OpenBisClient implements IOpenBisClient {
   /* ----- Spaces ----------------------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
   /**
-   * Function to get a list of all space identifiers which are registered in this openBIS instance
-   * @return list with the identifiers of all available spaces
+   * Get all Space codes which are registered in this openBIS instance.
+   * @return List with the codes of all available spaces
    */
   @Override
   public List<String> listSpaces() {
@@ -313,10 +315,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Returns Space names a given user should be able to see
-   *
-   * @param userID Username found in openBIS
-   * @return List of space names with projects this user has access to
+   * Get all Space codes which are available for the provided openBIS user.
+   * @param user openBIS user name
+   * @return List with codes of all available spaces for specific openBIS user
    */
   @Override
   public List<String> getUserSpaces(String userID) {
@@ -344,7 +345,7 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Get all space codes which are available for the provided openBIS user.
+   * Get all Space codes which are available for the provided openBIS user.
    * @param user openBIS user name
    * @return List with codes of all available spaces for specific openBIS user
    */
@@ -363,7 +364,7 @@ public class OpenBisClient implements IOpenBisClient {
 
     } catch (UserFailureException ufe) {
       logger.error(String.format("Could not fetch spaces of user %s. Does this user exist in openBIS?", user));
-      logger.warn(String.format("listSpacesForUser(\"%s\") returned null.", userId));
+      logger.warn(String.format("listSpacesForUser(\"%s\") returned null.", user));
       return null;
     }
   }
@@ -373,9 +374,8 @@ public class OpenBisClient implements IOpenBisClient {
   /* ----- Projects --------------------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
   /**
-   * Function to get all projects which are registered in this openBIS instance
-   *
-   * @return list with all projects which are registered in this openBIS instance
+   * Get all projects which are registered in this openBIS instance.
+   * @return List with all available projects in this openBIS instance
    */
   @Override
   public List<Project> listProjects() {
@@ -397,7 +397,7 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Get all projects which are available to the provided user in this openBIS instance
+   * Get all projects which are available to the provided user in this openBIS instance.
    * @param user openBIS user name
    * @return List with all available projects for specific openBIS user
    */
@@ -419,6 +419,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get all projects registered under the provided Space code.
+   * @param spaceCode Code of the openBIS space
+   * @return List of openBIS v3 Project
+   */
   @Override
   public List<Project> getProjectsOfSpace(String spaceCode) {
     ensureLoggedIn();
@@ -441,6 +446,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get a map with all project codes as key and their experiments as value which are registered under the provided Space code.
+   * @param spaceIdentifier Code of the openBIS space
+   * @return Map with project code as key and its experiments as value
+   */
   @Override
   public Map<String, List<Experiment>> getProjectExperimentMapping(String spaceIdentifier) {
     // ToDo: Is this necessary? With getProjectsOfSpace(String) you also get all projects with their experiments.
@@ -462,6 +472,11 @@ public class OpenBisClient implements IOpenBisClient {
     return projectExperimentMapping;
   }
 
+  /**
+   * Get the project under which the experiment of the provided identifier is registered.
+   * @param experimentIdentifier Identifier of the openBIS experiment
+   * @return openBIS v3 Project
+   */
   @Override
   public Project getProjectOfExperimentByIdentifier(String experimentIdentifier) {
     ensureLoggedIn();
@@ -489,6 +504,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get the project of the provided project code or identifier.
+   * @param projectCodeOrIdentifier Code or identifier of the openBIS project
+   * @return openBIS v3 Project
+   */
   public Project getProject(String projectCodeOrIdentifier) {
     ensureLoggedIn();
 
@@ -512,12 +532,22 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get the project of the provided project identifier.
+   * @param projectIdentifier Identifier of the openBIS project
+   * @return openBIS v3 Project
+   */
   @Override
   public Project getProjectByIdentifier(String projectIdentifier) {
     // ToDo: Can be removed from IOpenBisClient as getProject(String) is sufficient
     return getProject(projectIdentifier);  // ensureLoggedIn() is called in getProject
   }
 
+  /**
+   * Get the project of the provided project code.
+   * @param projectCode Identifier of the openBIS project
+   * @return openBIS v3 Project
+   */
   @Override
   public Project getProjectByCode(String projectCode) {
     // ToDo: Can be removed from IOpenBisClient as getProject(String) is sufficient
@@ -529,9 +559,8 @@ public class OpenBisClient implements IOpenBisClient {
   /* ----- Experiment / ExperimentType -------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
   /**
-   * Function to list all Experiments which are registered in the openBIS instance.
-   *
-   * @return list with all experiments registered in this openBIS instance
+   * Get all Experiments which are registered in the openBIS instance.
+   * @return List of openBIS v3 Experiment
    */
   @Override
   public List<Experiment> listExperiments() {
@@ -553,9 +582,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Get all Experiments which are available to the provided user in this openBIS instance
+   * Get all Experiments which are available to the provided user in the openBIS instance
    * @param user openBIS user name
-   * @return List with all available experiments for specific openBIS user
+   * @return List of openBIS v3 Experiment
    */
   public List<Experiment> listExperimentsForUser(String user) {
     ensureLoggedIn(user);
@@ -576,10 +605,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Returns a list of all Experiments of a certain user.
-   *
-   * @param userID ID of user
-   * @return A list containing the experiments
+   * Get all Experiments which are available to the provided user in the openBIS instance
+   * @param userID openBIS user name
+   * @return List of openBIS v3 Experiment
    */
   @Override
   public List<Experiment> getExperimentsForUser(String userID) {
@@ -603,6 +631,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get all Experiments which are registered under the provided space code.
+   * @param spaceCode Code of the openBIS space
+   * @return List of openBIS v3 Experiment
+   */
   @Override
   public List<Experiment> getExperimentsOfSpace(String spaceCode) {
     ensureLoggedIn();
@@ -626,11 +659,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to list all Experiments for a specific project which are registered in the openBIS
-   * instance. av: 19353 ms
-   *
-   * @param project the project for which the experiments should be listed
-   * @return list with all experiments registered in this openBIS instance
+   * Get all experiments registered under the provided openBIS project.
+   * @param project Project that exists in the openBIS instance
+   * @return List of openBIS v3 Experiment
    */
   @Override
   public List<Experiment> getExperimentsForProject(Project project) {
@@ -655,11 +686,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to list all Experiments for a specific project which are registered in the openBIS
-   * instance.
-   *
-   * @param projectCodeOrIdentifier Project code or identifer as defined by openBIS.
-   * @return list with all experiments registered in this openBIS instance
+   * Get all experiments which are registered under the provided project code or identifier.
+   * @param projectCodeOrIdentifier Code or identifier of the openBIS project
+   * @return List of openBIS v3 Experiment
    */
   @Override
   public List<Experiment> getExperimentsForProject(String projectCodeOrIdentifier) {
@@ -685,18 +714,33 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get all experiments which are registered under the provided project identifier.
+   * @param projectIdentifier Identifier of the openBIS project
+   * @return List of openBIS v3 Experiment
+   */
   @Override
   public List<Experiment> getExperimentsOfProjectByIdentifier(String projectIdentifier) {
     // ToDo: Can be removed from IOpenBisClient as getExperimentsForProject(String) is sufficient
     return getExperimentsForProject(projectIdentifier);  // ensureLoggedIn() is called in getExperimentsForProject
   }
 
+  /**
+   * Get all experiments which are registered under the provided project code.
+   * @param projectCode Code of the openBIS project
+   * @return List of openBIS v3 Experiment
+   */
   @Override
   public List<Experiment> getExperimentsOfProjectByCode(String projectCode) {
     // ToDo: Can be removed from IOpenBisClient as getExperimentsForProject(String) is sufficient
     return getExperimentsForProject(projectCode);  // ensureLoggedIn() is called in getExperimentsForProject
   }
 
+  /**
+   * Get experiment of the provided experiment code or identifier.
+   * @param experimentCodeOrIdentifier Code or identifier of the openBIS experiment
+   * @return openBIS v3 Experiment
+   */
   public Experiment getExperiment(String experimentCodeOrIdentifier) {
     if (experimentCodeOrIdentifier.startsWith("/"))
       return getExperimentById(experimentCodeOrIdentifier);  // ensureLoggedIn() is called inside
@@ -704,6 +748,11 @@ public class OpenBisClient implements IOpenBisClient {
       return getExperimentByCode(experimentCodeOrIdentifier);  // ensureLoggedIn() is called inside
   }
 
+  /**
+   * Get experiment of the provided experiment code.
+   * @param experimentCode Code of the openBIS experiment
+   * @return openBIS v3 Experiment
+   */
   @Override
   public Experiment getExperimentByCode(String experimentCode) {
     ensureLoggedIn();
@@ -726,6 +775,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get experiment of the provided experiment identifier.
+   * @param experimentIdentifier Code of the openBIS experiment
+   * @return openBIS v3 Experiment
+   */
   @Override
   public Experiment getExperimentById(String experimentId) {
     ensureLoggedIn();
@@ -748,6 +802,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get all experiments assigned to the provided experiment type.
+   * @param typeCode Code of the openBIS experiment type
+   * @return List of openBIS v3 Experiment
+   */
   @Override
   public List<Experiment> getExperimentsOfType(String typeCode) {
     ensureLoggedIn();
@@ -771,10 +830,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to get a ExperimentType object of a experiment type
-   *
-   * @param typeCode the experiment type as string
-   * @return the ExperimentType object of the corresponding experiment type
+   * Get experiment type for the provided openBIS experiment type code.
+   * @param typeCode Code of the openBIS experiment type
+   * @return openBIS v3 ExperimentType
    */
   @Override
   public ExperimentType getExperimentTypeByString(String typeCode) {
@@ -803,7 +861,7 @@ public class OpenBisClient implements IOpenBisClient {
   /* ----- Sample / SampleType ---------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
   /**
-   * Get all Samples which are registered in the openBIS instance.
+   * Get all samples which are registered in the openBIS instance.
    * @return List of openBIS v3 Sample
    */
   public List<Sample> listSamples() {
@@ -825,9 +883,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Get all Samples which are available to the provided user in this openBIS instance
+   * Get all Samples which are available to the provided user in the openBIS instance.
    * @param user openBIS user name
-   * @return List with all available samples for specific openBIS user
+   * @return List of openBIS v3 Sample
    */
   public List<Sample> listSamplesForUser(String user) {
     ensureLoggedIn(user);
@@ -848,10 +906,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to retrieve all samples of a given space
-   *
-   * @param spaceCode identifier of the openBIS space
-   * @return list with all samples of the given space
+   * Get all samples registered under the provided space code.
+   * @param spaceCode Code of the openBIS space
+   * @return List of openBIS v3 Sample
    */
   @Override
   public List<Sample> getSamplesOfSpace(String spaceCode) {
@@ -875,6 +932,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get all samples registered under the provided project code or identifier.
+   * @param projectCodeOrIdentifier Code or identifier of the openBIS project
+   * @return List of openBIS v3 Sample
+   */
   @Override
   public List<Sample> getSamplesOfProject(String projectCodeOrIdentifier) {
     ensureLoggedIn();
@@ -900,12 +962,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to retrieve all samples of a given experiment Note: seems to throw a
-   * ch.systemsx.cisd.common.exceptions.UserFailureException if wrong identifier given TODO Should
-   * we catch it and throw an illegalargumentexception instead? would be a lot clearer in my opinion
-   *
-   * @param experimentCodeOrIdentifier identifier/code (both should work) of the openBIS experiment
-   * @return list with all samples of the given experiment
+   * Get all samples registered under the provided experiment code or identifier.
+   * @param experimentCodeOrIdentifier Code or identifier of the openBIS experiment
+   * @return List of openBIS v3 Sample
    */
   @Override
   public List<Sample> getSamplesOfExperiment(String experimentCodeOrIdentifier) {
@@ -933,6 +992,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get sample of the provided sample code or identifier.
+   * @param sampleCodeOrIdentifier Code or identifier of the openBIS sample
+   * @return openBIS v3 Sample
+   */
   public Sample getSample(String sampleCodeOrIdentifier) {
     if (sampleCodeOrIdentifier.startsWith("/"))
       return getSampleByIdentifier(sampleCodeOrIdentifier);  // ensureLoggedIn() is called inside
@@ -940,6 +1004,11 @@ public class OpenBisClient implements IOpenBisClient {
       return getSampleByCode(sampleCodeOrIdentifier);  // ensureLoggedIn() is called inside
   }
 
+  /**
+   * Get sample of the provided sample code.
+   * @param sampleCode Code of the openBIS sample
+   * @return openBIS v3 Sample
+   */
   @Override
   public Sample getSampleByCode(String sampleCode) {
     ensureLoggedIn();
@@ -962,6 +1031,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get sample of the provided sample identifier.
+   * @param sampleIdentifier Identifier of the openBIS sample
+   * @return openBIS v3 Sample; null if search is empty
+   */
   @Override
   public Sample getSampleByIdentifier(String sampleIdentifier) {
     ensureLoggedIn();
@@ -985,10 +1059,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to get a sample with its parents and children
-   *
-   * @param sampleCode code of the openBIS sample
-   * @return sample
+   * Get samples with its parents and children objects also fetched entirely.
+   * @param sampleCode Code of the openBIS sample
+   * @return List of openBIS v3 Sample
    */
   @Override
   public List<Sample> getSamplesWithParentsAndChildren(String sampleCode) {
@@ -1017,6 +1090,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get all samples of the provided sample type.
+   * @param typeCode Code of the openBIS sample type
+   * @return List of openBIS v3 Sample
+   */
   @Override
   public List<Sample> getSamplesOfType(String typeCode) {
     ensureLoggedIn();
@@ -1039,6 +1117,12 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+
+  /**
+   * Get sample type for the provided openBIS sample type code.
+   * @param typeCode Code of the openBIS sample type
+   * @return openBIS v3 SampleType
+   */
   @Override
   public SampleType getSampleTypeByString(String typeCode) {
     ensureLoggedIn();
@@ -1062,9 +1146,8 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to retrieve a map with sample type code as key and the sample type object as value
-   *
-   * @return map with sample types
+   * Get map with all sample type codes as key and their SampleTypes as value.
+   * @return Map with sample type code as key and openBIS v3 SampleType as value
    */
   @Override
   public Map<String, SampleType> getSampleTypes() {
@@ -1095,7 +1178,7 @@ public class OpenBisClient implements IOpenBisClient {
   /* ----- DataSets --------------------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
   /**
-   * Get all DataSets which are registered in the openBIS instance.
+   * Get all datasets which are registered in the openBIS instance.
    * @return List of openBIS v3 DataSet
    */
   public List<DataSet> listDatasets() {
@@ -1117,9 +1200,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Get all DataSets which are available to the provided user in this openBIS instance
+   * Get all datasets which are available to the provided user in the openBIS instance.
    * @param user openBIS user name
-   * @return List with all available datasets for specific openBIS user
+   * @return List of openBIS v3 DataSet
    */
   public List<DataSet> listDatasetsForUser(String user) {
     ensureLoggedIn(user);
@@ -1140,10 +1223,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to list all datasets of a specific openBIS space
-   *
-   * @param spaceCode identifier of the openBIS space
-   * @return list with all datasets of the given space
+   * Get all datasets registered under the provided openBIS space code.
+   * @param spaceCode Code of the openBIS space
+   * @return List of openBIS v3 DataSet
    */
   @Override
   public List<DataSet> getDataSetsOfSpace(String spaceCode) {
@@ -1168,10 +1250,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to list all datasets of a specific openBIS project
-   *
-   * @param projects openBIS v3 Project objects
-   * @return list with all datasets of the given project
+   * Get all datasets registered under the provided list of openBIS projects.
+   * @param projects List of openBIS v3 Project
+   * @return List of openBIS v3 DataSet
    */
   @Override
   public List<DataSet> getDataSetsOfProjects(List<Project> projects) {
@@ -1196,10 +1277,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to list all datasets of a specific openBIS project
-   *
-   * @param projectCodeIdentifier identifier of the openBIS project
-   * @return list with all datasets of the given project
+   * Get all datasets registered under the provided project code or identifier.
+   * @param projectCodeIdentifier Code or identifier of the openBIS project
+   * @return List of openBIS v3 DataSet
    */
   @Override
   public List<DataSet> getDataSetsOfProject(String projectCodeIdentifier) {
@@ -1226,10 +1306,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * List all datasets for given experiment identifiers
-   *
-   * @param experimentCodes List of experiment codes
-   * @return List of datasets
+   * Get all datasets registered under the provided experiment codes.
+   * @param experimentCodes List of experiment codes registered in openBIS
+   * @return List of openBIS v3 DataSet
    */
   @Override
   public List<DataSet> listDataSetsForExperiments(List<String> experimentCodes) {
@@ -1254,10 +1333,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Returns all datasets of a given experiment. The new version should run smoother
-   *
-   * @param experimentIdentifier identifier or code of the openbis experiment
-   * @return list of all datasets of the given experiment
+   * Get all datasets registered under the provided experiment identifier.
+   * @param experimentIdentifier Identifier of the openBIS experiment
+   * @return List of openBIS v3 DataSet
    */
   @Override
   public List<DataSet> getDataSetsOfExperimentByIdentifier(String experimentIdentifier) {
@@ -1282,11 +1360,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to list all datasets of a specific experiment (watch out there are different dataset
-   * classes)
-   *
-   * @param experimentPermID permId of the openBIS experiment
-   * @return list with all datasets of the given experiment
+   * Get all datasets registered under the provided experiment PermID.
+   * @param experimentPermID PermID of the openBIS experiment
+   * @return List of openBIS v3 DataSet
    */
   @Override
   public List<DataSet> getDataSetsOfExperiment(String experimentPermID) {
@@ -1311,10 +1387,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * List all datasets for given sample codes
-   *
-   * @param sampleCodes list of sample codes
-   * @return List of datasets
+   * Get all datasets registered under the provided sample codes.
+   * @param sampleCodes List of sample codes registered in openBIS
+   * @return List of openBIS v3 DataSet
    */
   @Override
   public List<DataSet> listDataSetsForSamples(List<String> sampleCodes) {
@@ -1338,6 +1413,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get all datasets registered under the provided sample code or identifier.
+   * @param sampleCodeOrIdentifier Code or Identifier of the openBIS sample
+   * @return List of openBIS v3 DataSet
+   */
   @Override
   public List<DataSet> getDataSetsOfSample(String sampleCodeOrIdentifier) {
     if (sampleCodeOrIdentifier.startsWith("/"))
@@ -1346,6 +1426,11 @@ public class OpenBisClient implements IOpenBisClient {
       return getDataSetsOfSampleByCode(sampleCodeOrIdentifier);  // ensureLoggedIn() is called inside
   }
 
+  /**
+   * Get all datasets registered under the provided sample code.
+   * @param sampleCode Code of the openBIS sample
+   * @return List of openBIS v3 DataSet
+   */
   @Override
   public List<DataSet> getDataSetsOfSampleByCode(String sampleCode) {
     ensureLoggedIn();
@@ -1369,11 +1454,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to list all datasets of a specific sample (watch out there are different dataset
-   * classes)
-   *
-   * @param sampleIdentifier identifier of the openBIS sample
-   * @return list with all datasets of the given sample
+   * Get all datasets registered under the provided sample identifier.
+   * @param sampleIdentifier Identifier of the openBIS sample
+   * @return List of openBIS v3 DataSet
    */
   @Override
   public List<DataSet> getDataSetsOfSampleByIdentifier(String sampleIdentifier) {
@@ -1397,6 +1480,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get all datasets of the provided dataset type.
+   * @param typeCode Code of the openBIS dataset type
+   * @return List of openBIS v3 DataSet
+   */
   @Override
   public List<DataSet> getDataSetsByType(String typeCode) {
     ensureLoggedIn();
@@ -1446,7 +1534,8 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Get all vocabularies which are registered in the openBIS instance.
+   * Get all vocabualaries which are available to the provided user in the openBIS instance.
+   * @param user openBIS user name
    * @return List of openBIS v3 Vocabulary
    */
   public List<Vocabulary> listVocabularyForUser(String user) {
@@ -1467,6 +1556,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get vocabulary of the provided vocabulary code.
+   * @param vocabularyCode Code of the openBIS vocabulary
+   * @return openBIS v3 Vocabulary
+   */
   @Override
   public Vocabulary getVocabulary(String vocabularyCode) {
     ensureLoggedIn();
@@ -1490,11 +1584,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to list the vocabulary terms for a given property which has been added to openBIS. The
-   * property has to be a Controlled Vocabulary Property.
-   *
-   * @param property the property type
-   * @return list of the vocabulary terms of the given property
+   * Get all vocabulary terms of the vocabulary assigned to the provided property type.
+   * @param property openBIS v3 PropertyType
+   * @return List of vocabulary term codes
    */
   @Override
   public List<String> listVocabularyTermsForProperty(PropertyType property) {
@@ -1530,10 +1622,10 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Returns a map of Labels (keys) and Codes (values) in a Vocabulary in openBIS
-   *
-   * @param vocabularyCode Code of the Vocabulary type
-   * @return A map containing the labels as keys and codes as values in String format
+   * Get a map of vocabulary term codes as keys and labels as values
+   * from a vocabulary of the provided vocabulary code.
+   * @param vocabularyCode Code of the openBIS vocabulary
+   * @return Map with vocabulary term codes as keys and labels as values
    */
   @Override
   public Map<String, String> getVocabCodesAndLabelsForVocab(String vocabularyCode) {
@@ -1572,11 +1664,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Returns a list of all Codes in a Vocabulary in openBIS. This is useful when labels don't exist
-   * or are not needed.
-   *
-   * @param vocabularyCode Code of the Vocabulary type
-   * @return A list containing the codes of the vocabulary type
+   * Get all vocabulary term codes from a vocabulary of the provided vocabulary code.
+   * @param vocabularyCode Code of the openBIS vocabulary
+   * @return List of vocabulary term codes
    */
   @Override
   public List<String> getVocabCodesForVocab(String vocabularyCode) {
@@ -1612,11 +1702,10 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to get the label of a CV item for some property
-   *
-   * @param propertyType the property type
-   * @param vocabularyTermCode the property value
-   * @return Label of CV item
+   * Get the label of a vocabulary term for the provided vocabulary term code.
+   * @param propertyType openBIS v3 PropertyType (not used...)
+   * @param vocabularyTermCode Code of openBIS VocabularyTerm
+   * @return Label of vocabulary term
    */
   @Override
   public String getCVLabelForProperty(PropertyType propertyType, String vocabularyTermCode) {
@@ -1644,6 +1733,11 @@ public class OpenBisClient implements IOpenBisClient {
   /* ------------------------------------------------------------------------------------ */
   /* ----- Attachments ------------------------------------------------------------------ */
   /* ------------------------------------------------------------------------------------ */
+  /**
+   * Get all attachments registered under the provided sample identifier.
+   * @param sampleIdentifier Identifier of the openBIS sample
+   * @return List of openBIS v3 Attachment
+   */
   @Override
   public List<Attachment> listAttachmentsForSampleByIdentifier(String sampleIdentifier) {
     ensureLoggedIn();
@@ -1651,6 +1745,11 @@ public class OpenBisClient implements IOpenBisClient {
     return getSample(sampleIdentifier).getAttachments();
   }
 
+  /**
+   * Get all attachments registered under the provided project identifier.
+   * @param projectIdentifier Identifier of the openBIS project
+   * @return List of openBIS v3 Attachment
+   */
   @Override
   public List<Attachment> listAttachmentsForProjectByIdentifier(String projectIdentifier) {
     ensureLoggedIn();
@@ -1662,11 +1761,23 @@ public class OpenBisClient implements IOpenBisClient {
   /* ------------------------------------------------------------------------------------ */
   /* ----- Exists Methods --------------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
+  /**
+   * Checks if space with provided space code exists in the openBIS instance.
+   * @param spaceCode Code of an openBIS space
+   * @return True if exists, else false
+   */
   @Override
   public boolean spaceExists(String spaceCode) {
     return listSpaces().contains(spaceCode);  // ensureLoggedIn is called in listSpaces()
   }
 
+  /**
+   * Checks if the project with the provided project code exists in the openBIS instance
+   * under the condition that the project is registered under the provided space code.
+   * @param spaceCode Code of an openBIS space
+   * @param projectCode Code of an openBIS project
+   * @return True if exists, else false
+   */
   @Override
   public boolean projectExists(String spaceCode, String projectCode) {
     ensureLoggedIn();
@@ -1687,12 +1798,26 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Checks if the project with the provided project code or identifier exists in the openBIS instance.
+   * @param projectCodeOrIdentifier Code or Identifier of an openBIS project
+   * @return True if exists, else false
+   */
   public boolean projectExists(String projectCodeOrIdentifier) {
     Project project = getProject(projectCodeOrIdentifier);  // ensureLoggedIn is called in getProject(String)
 
     return projectCodeOrIdentifier != null && project != null;
   }
 
+  /**
+   * Checks if the experiment with the provided experiment code exists in the openBIS instance
+   * under the conditions that the project is registered under the provided space code and
+   * the provided project code.
+   * @param spaceCode Code of an openBIS space
+   * @param projectCode Code of an openBIS project
+   * @param experimentCode Code of an openBIS experiment
+   * @return True if exists, else false
+   */
   @Override
   public boolean expExists(String spaceCode, String projectCode, String experimentCode) {
     ensureLoggedIn();
@@ -1714,12 +1839,22 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Checks if the experiment with the provided experiment code or Identifier exists in the openBIS instance.
+   * @param experimentCodeOrIdentifier Code or Identifier of an openBIS experiment
+   * @return True if exists, else false
+   */
   public boolean experimentExists(String experimentCodeOrIdentifier) {
     Experiment experiment = getExperiment(experimentCodeOrIdentifier);   // ensureLoggedIn() is called in getExperiment(String)
 
     return experimentCodeOrIdentifier != null && experiment != null;
   }
 
+  /**
+   * Checks if the sample with the provided sample code or Identifier exists in the openBIS instance.
+   * @param sampleCodeOrIdentifier Code or Identifier of an openBIS sample
+   * @return True if exists, else false
+   */
   @Override
   public boolean sampleExists(String sampleCodeOrIdentifier) {
     Sample sample = getSample(sampleCodeOrIdentifier);  // ensureLoggedIn() is called in getSample(String)
@@ -1731,6 +1866,12 @@ public class OpenBisClient implements IOpenBisClient {
   /* ------------------------------------------------------------------------------------ */
   /* ----- Space creation --------------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
+  /**
+   * Get a {@link SpaceCreation} object that can be used to register a new space in openBIS
+   * with {@link #createSpaces(List) createSpaces}.
+   * @param code Unique space code which does not already exist in the openBIS instance
+   * @return {@link SpaceCreation} with set code
+   */
   public SpaceCreation prepareSpaceCreation(String code) {
     SpaceCreation space = new SpaceCreation();
     space.setCode(code);
@@ -1738,6 +1879,13 @@ public class OpenBisClient implements IOpenBisClient {
     return space;
   }
 
+  /**
+   * Get a {@link SpaceCreation} object that can be used to register a new space in openBIS
+   * with {@link #createSpaces(List) createSpaces}.
+   * @param code Unique space code which does not already exist in the openBIS instance
+   * @param description Description of the space
+   * @return {@link SpaceCreation} with set code and description
+   */
   public SpaceCreation prepareSpaceCreation(String code, String description) {
     SpaceCreation space = new SpaceCreation();
     space.setCode(code);
@@ -1746,6 +1894,11 @@ public class OpenBisClient implements IOpenBisClient {
     return space;
   }
 
+  /**
+   * Create a new space in the openBIS instance with the provided code.
+   * @param code Unique space code which does not already exist in the openBIS instance
+   * @return {@link SpacePermId} of the newly registered space; null if registration fails
+   */
   public SpacePermId createSpace(String code) {
     ensureLoggedIn();
 
@@ -1761,6 +1914,12 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Create a new space in the openBIS instance with the provided code and description.
+   * @param code Unique space code which does not already exist in the openBIS instance
+   * @param description Description of the space
+   * @return {@link SpacePermId} of the newly registered space; null if registration fails
+   */
   public SpacePermId createSpace(String code, String description) {
     ensureLoggedIn();
 
@@ -1777,6 +1936,12 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Create multiple new spaces in the openBIS instance.
+   * @param spaces List of {@link SpaceCreation}, each at least with a unique space code
+   *               which does not already exist in the openBIS instance
+   * @return List of {@link SpacePermId} of the newly registered spaces; null if registration fails
+   */
   public List<SpacePermId> createSpaces(List<SpaceCreation> spaces) {
     ensureLoggedIn();
 
@@ -1794,6 +1959,13 @@ public class OpenBisClient implements IOpenBisClient {
   /* ------------------------------------------------------------------------------------ */
   /* ----- Project creation ------------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
+  /**
+   * Get a {@link ProjectCreation} object that can be used to register a new project in openBIS
+   * with {@link #createProjects(List) createProjects}.
+   * @param code Unique project code within space of creation
+   * @param space Code of space that exists in the openBIS instance
+   * @return {@link ProjectCreation} with set code and space
+   */
   public ProjectCreation prepareProjectCreation(String code, String space) {
     ProjectCreation project = new ProjectCreation();
     project.setCode(code);
@@ -1802,6 +1974,14 @@ public class OpenBisClient implements IOpenBisClient {
     return project;
   }
 
+  /**
+   * Get a {@link ProjectCreation} object that can be used to register a new project in openBIS
+   * with {@link #createProjects(List) createProjects}.
+   * @param code Unique project code within space of creation
+   * @param space Code of space that exists in the openBIS instance
+   * @param description Description of the project
+   * @return {@link ProjectCreation} with set code, space and description
+   */
   public ProjectCreation prepareProjectCreation(String code, String space, String description) {
     ProjectCreation project = new ProjectCreation();
     project.setCode(code);
@@ -1811,6 +1991,12 @@ public class OpenBisClient implements IOpenBisClient {
     return project;
   }
 
+  /**
+   * Create a new project in the openBIS instance under the provided space code.
+   * @param code Unique project code within space of creation
+   * @param space Code of space that exists in the openBIS instance
+   * @return {@link SpacePermId} of the newly registered project; null if registration fails
+   */
   public ProjectPermId createProject(String code, String space) {
     ensureLoggedIn();
 
@@ -1826,6 +2012,14 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Create a new project in the openBIS instance under the provided space code
+   * with the provided project code and description.
+   * @param code Unique project code within space of creation
+   * @param space Code of space that exists in the openBIS instance
+   * @param description Description of the project
+   * @return {@link SpacePermId} of the newly registered project; null if registration fails
+   */
   public ProjectPermId createProject(String code, String space, String description) {
     ensureLoggedIn();
 
@@ -1841,6 +2035,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Create multiple new projects in the openBIS instance.
+   * @param projects List of {@link ProjectCreation}
+   * @return List of {@link ProjectPermId} of the newly registered projects; null if registration fails
+   */
   public List<ProjectPermId> createProjects(List<ProjectCreation> projects) {
     ensureLoggedIn();
 
@@ -1858,6 +2057,14 @@ public class OpenBisClient implements IOpenBisClient {
   /* ------------------------------------------------------------------------------------ */
   /* ----- Experiment creation ---------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
+  /**
+   * Get a {@link ExperimentCreation} object that can be used to register a new experiment in openBIS
+   * with {@link #createExperiments(List) createExperiments}.
+   * @param code Unique experiment code within space of creation
+   * @param type Experiment type that exists in the openBIS instance
+   * @param projectIdentifier Identifier of project that exists in the openBIS instance
+   * @return {@link ExperimentCreation} with set code, type and project identifier
+   */
   public ExperimentCreation prepareExperimentCreation(String code, String type, String projectIdentifier) {
     ExperimentCreation experiment = new ExperimentCreation();
     experiment.setCode(code);
@@ -1867,6 +2074,15 @@ public class OpenBisClient implements IOpenBisClient {
     return experiment;
   }
 
+  /**
+   * Get a {@link ExperimentCreation} object that can be used to register a new experiment in openBIS
+   * with {@link #createExperiments(List) createExperiments}.
+   * @param code Unique experiment code within space of creation
+   * @param type Experiment type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param project Code of project that exists in the openBIS instance
+   * @return {@link ExperimentCreation} with set code, type, space and project
+   */
   public ExperimentCreation prepareExperimentCreation(String code, String type, String space, String project) {
     ExperimentCreation experiment = new ExperimentCreation();
     experiment.setCode(code);
@@ -1876,6 +2092,15 @@ public class OpenBisClient implements IOpenBisClient {
     return experiment;
   }
 
+  /**
+   * Get a {@link ExperimentCreation} object that can be used to register a new experiment in openBIS
+   * with {@link #createExperiments(List) createExperiments}.
+   * @param code Unique experiment code within space of creation
+   * @param type Experiment type that exists in the openBIS instance
+   * @param projectIdentifier Identifier of project that exists in the openBIS instance
+   * @param properties Map with name of existing PropertyType as key and its value
+   * @return {@link ExperimentCreation} with set code, type, project identifier and properties
+   */
   public ExperimentCreation prepareExperimentCreation(String code, String type, String projectIdentifier,
                                                       Map<String, String> properties) {
     ExperimentCreation experiment = new ExperimentCreation();
@@ -1887,6 +2112,16 @@ public class OpenBisClient implements IOpenBisClient {
     return experiment;
   }
 
+  /**
+   * Get a {@link ExperimentCreation} object that can be used to register a new experiment in openBIS
+   * with {@link #createExperiments(List) createExperiments}.
+   * @param code Unique experiment code within space of creation
+   * @param type Experiment type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param project Code of project that exists in the openBIS instance
+   * @param properties Map with name of existing PropertyType as key and its value
+   * @return {@link ExperimentCreation} with set code, type, space, project and properties
+   */
   public ExperimentCreation prepareExperimentCreation(String code, String type, String space, String project,
                                                       Map<String, String> properties) {
     ExperimentCreation experiment = new ExperimentCreation();
@@ -1898,6 +2133,13 @@ public class OpenBisClient implements IOpenBisClient {
     return experiment;
   }
 
+  /**
+   * Create a new experiment in the openBIS instance under the provided project identifier.
+   * @param code Unique experiment code within space of creation
+   * @param type Experiment type that exists in the openBIS instance
+   * @param projectIdentifier Identifier of project that exists in the openBIS instance
+   * @return {@link ExperimentPermId} of the newly registered experiment; null if registration fails
+   */
   public ExperimentPermId createExperiment(String code, String type, String projectIdentifier) {
     ensureLoggedIn();
 
@@ -1913,6 +2155,14 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Create a new experiment in the openBIS instance under the provided space and project code.
+   * @param code Unique experiment code within space of creation
+   * @param type Experiment type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param project Code of project that exists in the openBIS instance
+   * @return {@link ExperimentPermId} of the newly registered experiment; null if registration fails
+   */
   public ExperimentPermId createExperiment(String code, String type, String space, String project) {
     ensureLoggedIn();
 
@@ -1928,7 +2178,16 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
-  public ExperimentPermId createExperiment(String code, String type, String projectIdentifier, Map<String, String> properties) {
+  /**
+   * Create a new experiment in the openBIS instance under the provided project identifier.
+   * @param code Unique experiment code within space of creation
+   * @param type Experiment type that exists in the openBIS instance
+   * @param projectIdentifier Identifier of project that exists in the openBIS instance
+   * @param properties Map with name of existing PropertyType as key and its value
+   * @return {@link ExperimentPermId} of the newly registered experiment; null if registration fails
+   */
+  public ExperimentPermId createExperiment(String code, String type, String projectIdentifier,
+                                           Map<String, String> properties) {
     ensureLoggedIn();
 
     try {
@@ -1944,7 +2203,17 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
-  public ExperimentPermId createExperiment(String code, String type, String space, String project, Map<String, String> properties) {
+  /**
+   * Create a new experiment in the openBIS instance under the provided space and project code.
+   * @param code Unique experiment code within space of creation
+   * @param type Experiment type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param project Code of project that exists in the openBIS instance
+   * @param properties Map with name of existing PropertyType as key and its value
+   * @return {@link ExperimentPermId} of the newly registered experiment; null if registration fails
+   */
+  public ExperimentPermId createExperiment(String code, String type, String space, String project,
+                                           Map<String, String> properties) {
     ensureLoggedIn();
 
     try {
@@ -1960,6 +2229,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Create multiple new experiments in the openBIS instance.
+   * @param experiments List of {@link ExperimentCreation}
+   * @return List of {@link ExperimentPermId} of the newly registered experiments; null if registration fails
+   */
   public List<ExperimentPermId> createExperiments(List<ExperimentCreation> experiments) {
     ensureLoggedIn();
 
@@ -1977,6 +2251,14 @@ public class OpenBisClient implements IOpenBisClient {
   /* ------------------------------------------------------------------------------------ */
   /* ----- Sample creation -------------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
+  /**
+   * Get a {@link SampleCreation} object that can be used to register a new sample in openBIS
+   * with {@link #createSamples(List) createSamples}.
+   * @param code Unique sample code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @return {@link SampleCreation} with set code, type and space
+   */
   public SampleCreation prepareSampleCreation(String code, String type, String space) {
     SampleCreation sample = new SampleCreation();
     sample.setCode(code);
@@ -1986,6 +2268,15 @@ public class OpenBisClient implements IOpenBisClient {
     return sample;
   }
 
+  /**
+   * Get a {@link SampleCreation} object that can be used to register a new sample in openBIS
+   * with {@link #createSamples(List) createSamples}.
+   * @param code Unique sample code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param project Code of project that exists in the openBIS instance
+   * @return {@link SampleCreation} with set code, type, space and project
+   */
   public SampleCreation prepareSampleCreation(String code, String type, String space, String project) {
     SampleCreation sample = new SampleCreation();
     sample.setCode(code);
@@ -1996,6 +2287,16 @@ public class OpenBisClient implements IOpenBisClient {
     return sample;
   }
 
+  /**
+   * Get a {@link SampleCreation} object that can be used to register a new sample in openBIS
+   * with {@link #createSamples(List) createSamples}.
+   * @param code Unique sample code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param project Code of project that exists in the openBIS instance
+   * @param experiment Code of experiment that exists in the openBIS instance
+   * @return {@link SampleCreation} with set code, type, space, project and experiment
+   */
   public SampleCreation prepareSampleCreation(String code, String type, String space, String project, String experiment) {
     SampleCreation sample = new SampleCreation();
     sample.setCode(code);
@@ -2007,15 +2308,39 @@ public class OpenBisClient implements IOpenBisClient {
     return sample;
   }
 
+  /**
+   * Get a {@link SampleCreation} object that can be used to register a new sample in openBIS
+   * with {@link #createSamples(List) createSamples}.
+   * @param code Unique sample code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param experimentIdentifier Identifier of experiment that exists in the openBIS instance
+   * @return {@link SampleCreation} with set code, type, space, project and experiment
+   */
   public SampleCreation prepareSampleCreation(String code, String type, ExperimentIdentifier experimentIdentifier) {
+
+    String[] idParts = experimentIdentifier.toString().split("/");
+    String space      = idParts[1];  // Space code is second as first is empty
+    String project    = idParts[2];
+
     SampleCreation sample = new SampleCreation();
     sample.setCode(code);
     sample.setTypeId( new EntityTypePermId(type) );
+    sample.setSpaceId( new SpacePermId(space) );
+    sample.setProjectId( new ProjectIdentifier(space, project) );
     sample.setExperimentId( experimentIdentifier );
 
     return sample;
   }
 
+  /**
+   * Get a {@link SampleCreation} object that can be used to register a new sample in openBIS
+   * with {@link #createSamples(List) createSamples}.
+   * @param code Unique sample code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param properties Map with name of existing PropertyType as key and its value
+   * @return {@link SampleCreation} with set code, type, space, and properties
+   */
   public SampleCreation prepareSampleCreation(String code, String type, String space,
                                               Map<String, String> properties) {
     SampleCreation sample = new SampleCreation();
@@ -2027,6 +2352,16 @@ public class OpenBisClient implements IOpenBisClient {
     return sample;
   }
 
+  /**
+   * Get a {@link SampleCreation} object that can be used to register a new sample in openBIS
+   * with {@link #createSamples(List) createSamples}.
+   * @param code Unique sample code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param project Code of project that exists in the openBIS instance
+   * @param properties Map with name of existing PropertyType as key and its value
+   * @return {@link SampleCreation} with set code, type, space, project and properties
+   */
   public SampleCreation prepareSampleCreation(String code, String type, String space, String project,
                                               Map<String, String> properties) {
     SampleCreation sample = new SampleCreation();
@@ -2039,6 +2374,17 @@ public class OpenBisClient implements IOpenBisClient {
     return sample;
   }
 
+  /**
+   * Get a {@link SampleCreation} object that can be used to register a new sample in openBIS
+   * with {@link #createSamples(List) createSamples}.
+   * @param code Unique sample code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param project Code of project that exists in the openBIS instance
+   * @param experiment Code of experiment that exists in the openBIS instance
+   * @param properties Map with name of existing PropertyType as key and its value
+   * @return {@link SampleCreation} with set code, type, space, project, experiment and properties
+   */
   public SampleCreation prepareSampleCreation(String code, String type, String space, String project, String experiment,
                                               Map<String, String> properties) {
     SampleCreation sample = new SampleCreation();
@@ -2052,17 +2398,44 @@ public class OpenBisClient implements IOpenBisClient {
     return sample;
   }
 
+  /**
+   * Get a {@link SampleCreation} object that can be used to register a new sample in openBIS
+   * with {@link #createSamples(List) createSamples}.
+   * @param code Unique sample code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param experimentIdentifier Identifier of experiment that exists in the openBIS instance
+   * @param properties Map with name of existing PropertyType as key and its value
+   * @return {@link SampleCreation} with set code, type, space, project, experiment and properties
+   */
   public SampleCreation prepareSampleCreation(String code, String type, ExperimentIdentifier experimentIdentifier,
                                               Map<String, String> properties) {
+    String[] idParts = experimentIdentifier.toString().split("/");
+    String space      = idParts[1];  // Space code is second as first is empty
+    String project    = idParts[2];
+
     SampleCreation sample = new SampleCreation();
     sample.setCode(code);
     sample.setTypeId( new EntityTypePermId(type) );
+    sample.setSpaceId( new SpacePermId(space) );
+    sample.setProjectId( new ProjectIdentifier(space, project) );
     sample.setExperimentId( experimentIdentifier );
     sample.setProperties(properties);
 
     return sample;
   }
 
+  /**
+   * Get a {@link SampleCreation} object that can be used to register a new sample in openBIS
+   * with {@link #createSamples(List) createSamples}.
+   * @param code Unique sample code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param project Code of project that exists in the openBIS instance
+   * @param experiment Code of experiment that exists in the openBIS instance
+   * @param parents List of {@link SampleIdentifier} that exist in the openBIS instance
+   * @param properties Map with name of existing PropertyType as key and its value
+   * @return {@link SampleCreation} with set code, type, space, project, experiment, parents and properties
+   */
   public SampleCreation prepareSampleCreation(String code, String type, String space, String project, String experiment,
                                               List<SampleIdentifier> parents, Map<String, String> properties) {
     SampleCreation sample = new SampleCreation();
@@ -2075,6 +2448,13 @@ public class OpenBisClient implements IOpenBisClient {
     return sample;
   }
 
+  /**
+   * Create a new sample in the openBIS instance under the provided space code.
+   * @param code Unique experiment code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @return {@link SamplePermId} of the newly registered sample; null if registration fails
+   */
   public SamplePermId createSample(String code, String type, String space) {
     ensureLoggedIn();
 
@@ -2085,12 +2465,19 @@ public class OpenBisClient implements IOpenBisClient {
 
     } catch (UserFailureException ufe) {
       logger.error("Could not create sample. Currently logged in user has sufficient permissions in openBIS?");
-      logger.warn(String.format("createSample(\"%s\", \"%s\", \"%s\") returned null.",
-              code, type, space));
+      logger.warn(String.format("createSample(\"%s\", \"%s\", \"%s\") returned null.", code, type, space));
       return null;
     }
   }
 
+  /**
+   * Create a new sample in the openBIS instance under the provided space and project code.
+   * @param code Unique experiment code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param project Code of project that exists in the openBIS instance
+   * @return {@link SamplePermId} of the newly registered sample; null if registration fails
+   */
   public SamplePermId createSample(String code, String type, String space, String project) {
     ensureLoggedIn();
 
@@ -2107,6 +2494,15 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Create a new sample in the openBIS instance under the provided space, project and experiment code.
+   * @param code Unique experiment code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param project Code of project that exists in the openBIS instance
+   * @param experiment Code of experiment that exists in the openBIS instance
+   * @return {@link SamplePermId} of the newly registered sample; null if registration fails
+   */
   public SamplePermId createSample(String code, String type, String space, String project, String experiment) {
     ensureLoggedIn();
 
@@ -2123,6 +2519,13 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Create a new sample in the openBIS instance under the provided experiment identifier.
+   * @param code Unique experiment code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param experimentIdentifier Identifier of experiment that exists in the openBIS instance
+   * @return {@link SamplePermId} of the newly registered sample; null if registration fails
+   */
   public SamplePermId createSample(String code, String type, ExperimentIdentifier experimentIdentifier) {
     ensureLoggedIn();
 
@@ -2138,7 +2541,16 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
-  public SamplePermId createSample(String code, String type, String space, Map<String, String> properties) {
+  /**
+   * Create a new sample in the openBIS instance under the provided space code.
+   * @param code Unique experiment code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param properties Map with name of existing PropertyType as key and its value
+   * @return {@link SamplePermId} of the newly registered sample; null if registration fails
+   */
+  public SamplePermId createSample(String code, String type, String space,
+                                   Map<String, String> properties) {
     ensureLoggedIn();
 
     try {
@@ -2154,7 +2566,17 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
-  public SamplePermId createSample(String code, String type, String space, String project, Map<String, String> properties) {
+  /**
+   * Create a new sample in the openBIS instance under the provided space and project code.
+   * @param code Unique experiment code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param project Code of project that exists in the openBIS instance
+   * @param properties Map with name of existing PropertyType as key and its value
+   * @return {@link SamplePermId} of the newly registered sample; null if registration fails
+   */
+  public SamplePermId createSample(String code, String type, String space, String project,
+                                   Map<String, String> properties) {
     ensureLoggedIn();
 
     try {
@@ -2170,6 +2592,16 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Create a new sample in the openBIS instance under the provided space, project and experiment code.
+   * @param code Unique experiment code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param project Code of project that exists in the openBIS instance
+   * @param experiment Code of experiment that exists in the openBIS instance
+   * @param properties Map with name of existing PropertyType as key and its value
+   * @return {@link SamplePermId} of the newly registered sample; null if registration fails
+   */
   public SamplePermId createSample(String code, String type, String space, String project, String experiment,
                                    Map<String, String> properties) {
     ensureLoggedIn();
@@ -2187,6 +2619,14 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Create a new sample in the openBIS instance under the provided experiment identifier.
+   * @param code Unique experiment code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param experimentIdentifier Identifier of experiment that exists in the openBIS instance
+   * @param properties Map with name of existing PropertyType as key and its value
+   * @return {@link SamplePermId} of the newly registered sample; null if registration fails
+   */
   public SamplePermId createSample(String code, String type, ExperimentIdentifier experimentIdentifier,
                                    Map<String, String> properties) {
     ensureLoggedIn();
@@ -2204,6 +2644,17 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Create a new sample in the openBIS instance under the provided space, project and experiment code.
+   * @param code Unique experiment code within space of creation
+   * @param type Sample type that exists in the openBIS instance
+   * @param space Code of space that exists in the openBIS instance
+   * @param project Code of project that exists in the openBIS instance
+   * @param experiment Code of experiment that exists in the openBIS instance
+   * @param parents List of {@link SampleIdentifier} that exist in the openBIS instance
+   * @param properties Map with name of existing PropertyType as key and its value
+   * @return {@link SamplePermId} of the newly registered sample; null if registration fails
+   */
   public SamplePermId createSample(String code, String type, String space, String project, String experiment,
                                    List<SampleIdentifier> parents, Map<String, String> properties) {
     ensureLoggedIn();
@@ -2221,6 +2672,11 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Create multiple new samples in the openBIS instance.
+   * @param samples List of {@link SampleCreation}
+   * @return List of {@link SamplePermId} of the newly registered samples; null if registration fails
+   */
   public List<SamplePermId> createSamples(List<SampleCreation> samples) {
     ensureLoggedIn();
 
@@ -2265,10 +2721,9 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Returns all openBIS users directly assigned to a Space.
-   *
-   * @param spaceCode code of the openBIS space
-   * @return set of user names as string
+   * Get all user names of users directly allocated to the provided openBIS space code.
+   * @param spaceCode Code of the openBIS space
+   * @return Set of openBIS user names
    */
   @Override
   public Set<String> getSpaceMembers(String spaceCode) {
@@ -2304,11 +2759,10 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to trigger ingestion services registered in openBIS
-   *
-   * @param serviceName name of the ingestion service which should be triggered
-   * @param parameters map with needed information for registration process
-   * @return object name of the QueryTableModel which is returned by the aggregation service
+   * Trigger custom Application Server service registered in openBIS.
+   * @param serviceName Name of the custom service which should be triggered
+   * @param parameters Map with needed information for registration process
+   * @return Object which is returned by the aggregation service
    */
   @Override
   public String triggerIngestionService(String serviceName, Map<String, Object> parameters) {
@@ -2333,6 +2787,12 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Generates a barcode String depending on the provided project identifier.
+   * @param projectIdentifier Identifier of the project
+   * @param number_of_samples_offset Not used.
+   * @return Project barcode
+   */
   @Override
   public String generateBarcode(String projectIdentifier, int number_of_samples_offset) {
     Project project = getProjectByIdentifier(projectIdentifier);
@@ -2346,11 +2806,10 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Function to transform openBIS entity type to human readable text. Performs String replacement
-   * and does not query openBIS!
-   *
-   * @param entityCode the entity code as string
-   * @return entity code as string in human readable text
+   * Transform openBIS entity type to human readable text.
+   * Performs String replacement and does not query openBIS!
+   * @param entityCode Entity code as string
+   * @return Entity code as string in human readable text
    */
   @Override
   public String openbisCodeToString(String entityCode) {
