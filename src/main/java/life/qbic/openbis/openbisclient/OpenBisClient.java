@@ -320,9 +320,9 @@ public class OpenBisClient implements IOpenBisClient {
    * @return List with codes of all available spaces for specific openBIS user
    */
   @Override
-  public List<String> getUserSpaces(String userID) {
+  public List<String> getUserSpaces(String user) {
     // this sets the user sessionToken
-    loginAsUser(userID);
+    loginAsUser(user);
     List<String> spaceIdentifiers = new ArrayList<>();
     // we are not using external functions to make sure this user is actually used
     try {
@@ -334,7 +334,7 @@ public class OpenBisClient implements IOpenBisClient {
         }
       }
     } catch (UserFailureException u) {
-      logger.error("Could not fetch spaces for user " + userID
+      logger.error("Could not fetch spaces for user " + user
               + ", because they could not be logged in. Is user " + this.userId + " an admin user?");
       logger.warn("No spaces were returned.");
     }
@@ -781,23 +781,23 @@ public class OpenBisClient implements IOpenBisClient {
    * @return openBIS v3 Experiment
    */
   @Override
-  public Experiment getExperimentById(String experimentId) {
+  public Experiment getExperimentById(String experimentIdentifier) {
     ensureLoggedIn();
 
     try {
       ExperimentSearchCriteria esc = new ExperimentSearchCriteria();
-      esc.withId().thatEquals( new ExperimentIdentifier(experimentId) );
+      esc.withId().thatEquals( new ExperimentIdentifier(experimentIdentifier) );
 
       SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, esc, fetchExperimentsCompletely());
 
       if (experiments.getTotalCount() == 0)
-        logger.info(String.format("No experiments found with getExperimentById(\"%s\").", experimentId));
+        logger.info(String.format("No experiments found with getExperimentById(\"%s\").", experimentIdentifier));
 
       return experiments.getObjects().isEmpty() ? null : experiments.getObjects().get(0);
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch experiments. Currently logged in user has sufficient permissions in openBIS?");
-      logger.warn(String.format("getExperimentById(\"%s\") returned null.", experimentId));
+      logger.warn(String.format("getExperimentById(\"%s\") returned null.", experimentIdentifier));
       return null;
     }
   }
