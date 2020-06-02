@@ -1,7 +1,5 @@
 package life.qbic.openbis.openbisclient;
 
-import static life.qbic.openbis.openbisclient.helper.OpenBisClientHelper.*;
-
 import ch.ethz.sis.openbis.generic.asapi.v3.IApplicationServerApi;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.attachment.Attachment;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.interfaces.IEntityType;
@@ -36,10 +34,9 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.roleassignment.search.RoleAssign
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.Sample;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.SampleType;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.create.SampleCreation;
-import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleFetchOptions;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.id.ISampleId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.id.SampleIdentifier;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.id.SamplePermId;
-import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleTypeSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.service.CustomASServiceExecutionOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.service.id.CustomASServiceCode;
@@ -57,15 +54,17 @@ import ch.ethz.sis.openbis.generic.asapi.v3.exceptions.NotFetchedException;
 import ch.ethz.sis.openbis.generic.dssapi.v3.IDataStoreServerApi;
 import ch.systemsx.cisd.common.exceptions.UserFailureException;
 import ch.systemsx.cisd.common.spring.HttpInvokerUtils;
+import org.apache.commons.lang3.text.WordUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.text.WordUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import static life.qbic.openbis.openbisclient.helper.OpenBisClientHelper.*;
 
 /**
  * The type Open bis client.
@@ -868,12 +867,22 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      SearchResult<Sample> samples = v3.searchSamples(sessionToken, new SampleSearchCriteria(), fetchSamplesCompletely());
+      List<Sample> samples = new ArrayList<>();
+      SearchResult<Space> spaces = v3.searchSpaces(sessionToken, new SpaceSearchCriteria(), fetchSpacesWithSamples());
 
-      if (samples.getTotalCount() == 0)
+      for (Space space : spaces.getObjects()) {
+        try {
+          samples.addAll(space.getSamples());
+
+        } catch (NotFetchedException nfe) {
+          System.out.printf("Space %s has no fetched samples.", space.getCode());
+        }
+      }
+
+      if (samples.isEmpty())
         logger.info("No samples found with listSamples().");
 
-      return samples.getObjects();
+      return samples;
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
@@ -891,14 +900,28 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn(user);
 
     try {
-      SearchResult<Sample> samples = v3.searchSamples(sessionToken, new SampleSearchCriteria(), fetchSamplesCompletely());
+      List<Sample> samples = new ArrayList<>();
+      SearchResult<Space> spaces = v3.searchSpaces(sessionToken, new SpaceSearchCriteria(), fetchSpacesWithSamples());
 
-      if (samples.getTotalCount() == 0)
-        logger.info(String.format("No samples found with listSamplesForUser(\"%s\").", user));
+      for (Space space : spaces.getObjects()) {
+        try {
+          samples.addAll(space.getSamples());
 
-      return samples.getObjects();
+        } catch (NotFetchedException nfe) {
+          System.out.printf("Space %s has no fetched samples.", space.getCode());
+        }
+      }
+
+      if (samples.isEmpty())
+        logger.info("No samples found with listSamples().");
+
+      return samples;
 
     } catch (UserFailureException ufe) {
+      logger.error(String.format("Could not fetch samples. User with name %s has sufficient permissions in openBIS?", user));
+      logger.warn(String.format("listSamplesForUser(\"%s\") returned null.", user));
+      return null;
+    } catch (IllegalArgumentException iae) {
       logger.error(String.format("Could not fetch samples of user %s. Does this user exist in openBIS?", user));
       logger.warn(String.format("listSamplesForUser(\"%s\") returned null.", user));
       return null;
@@ -915,15 +938,25 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      SampleSearchCriteria ssc = new SampleSearchCriteria();
-      ssc.withSpace().withCode().thatEquals(spaceCode);
+      SpaceSearchCriteria ssc = new SpaceSearchCriteria();
+      ssc.withCode().thatEquals(spaceCode);
 
-      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
+      List<Sample> samples = new ArrayList<>();
+      SearchResult<Space> spaces = v3.searchSpaces(sessionToken, ssc, fetchSpacesWithSamples());
 
-      if (samples.getTotalCount() == 0)
+      for (Space space : spaces.getObjects()) {
+        try {
+          samples.addAll( space.getSamples() );
+
+        } catch (NotFetchedException nfe) {
+          System.out.printf("Space %s has no fetched samples.", space.getCode());
+        }
+      }
+
+      if (samples.isEmpty())
         logger.info(String.format("No samples found with getSamplesOfSpace(\"%s\").", spaceCode));
 
-      return samples.getObjects();
+      return samples;
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
@@ -942,17 +975,27 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      SampleSearchCriteria ssc = new SampleSearchCriteria();
-      ssc.withOrOperator();
-      ssc.withExperiment().withProject().withCode().thatEquals(projectCodeOrIdentifier);
-      ssc.withExperiment().withProject().withId().thatEquals(new ProjectIdentifier(projectCodeOrIdentifier));
+      ProjectSearchCriteria psc = new ProjectSearchCriteria();
+      psc.withOrOperator();
+      psc.withCode().thatEquals(projectCodeOrIdentifier);
+      psc.withId().thatEquals(new ProjectIdentifier(projectCodeOrIdentifier));
 
-      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
+      List<Sample> samples = new ArrayList<>();
+      SearchResult<Project> projects = v3.searchProjects(sessionToken, psc, fetchProjectsWithSamples());
 
-      if (samples.getTotalCount() == 0)
+      for (Project project : projects.getObjects()) {
+        try {
+          samples.addAll( project.getSamples() );
+
+        } catch (NotFetchedException nfe) {
+          System.out.printf("Project %s has no fetched samples.", project.getCode());
+        }
+      }
+
+      if (samples.isEmpty())
         logger.info(String.format("No samples found with getSamplesOfProject(\"%s\").", projectCodeOrIdentifier));
 
-      return samples.getObjects();
+      return samples;
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
@@ -971,19 +1014,29 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      SampleSearchCriteria ssc = new SampleSearchCriteria();
+      ExperimentSearchCriteria esc = new ExperimentSearchCriteria();
 
       if (experimentCodeOrIdentifier.startsWith("/"))
-        ssc.withExperiment().withIdentifier().thatEquals(experimentCodeOrIdentifier);
+        esc.withId().thatEquals( new ExperimentIdentifier(experimentCodeOrIdentifier) );
       else
-        ssc.withExperiment().withCode().thatEquals(experimentCodeOrIdentifier);
+        esc.withCode().thatEquals(experimentCodeOrIdentifier);
 
-      SearchResult<Sample> samplesOfExperiment = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
+      List<Sample> samples = new ArrayList<>();
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, esc, fetchExperimentsWithSamples());
 
-      if (samplesOfExperiment.getTotalCount() == 0)
-        logger.info(String.format("No samples found with getSamplesofExperiment(\"%s\").", experimentCodeOrIdentifier));
+      for (Experiment experiment : experiments.getObjects()) {
+        try {
+          samples.addAll( experiment.getSamples() );
 
-      return samplesOfExperiment.getObjects();
+        } catch (NotFetchedException nfe) {
+          System.out.printf("Experiment %s has no fetched samples.", experiment.getCode());
+        }
+      }
+
+      if (samples.isEmpty())
+        logger.info(String.format("No samples found with getSamplesOfExperiment(\"%s\").", experimentCodeOrIdentifier));
+
+      return samples;
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
@@ -1013,19 +1066,25 @@ public class OpenBisClient implements IOpenBisClient {
   public Sample getSampleByCode(String sampleCode) {
     ensureLoggedIn();
 
-    try {
-      SampleSearchCriteria ssc = new SampleSearchCriteria();
-      ssc.withCode().thatEquals(sampleCode);
+    List<Sample> samples = listSamples();
 
-      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
+    if (samples == null) {
+      logger.error("listSamples() in getSampleByCode(\"%s\") returned null.");
+      logger.warn(String.format("getSampleByCode(\"%s\") returned null.", sampleCode));
+      return null;
 
-      if (samples.getTotalCount() == 0)
-        logger.info(String.format("No samples found with getSampleByCode(\"%s\").", sampleCode));
+    } else if (samples.isEmpty()) {
+      logger.info(String.format("listSamples() in getSampleByCode(\"%s\") returned empty list.", sampleCode));
+      logger.warn(String.format("getSampleByCode(\"%s\") returned null.", sampleCode));
+      return null;
 
-      return samples.getObjects().isEmpty() ? null : samples.getObjects().get(0);
+    } else {
+      for (Sample sample : samples) {
+        if (sample.getCode().equals(sampleCode))
+          return sample;
+      }
 
-    } catch (UserFailureException ufe) {
-      logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
+      logger.info(String.format("No samples found with getSampleByCode(\"%s\").", sampleCode));
       logger.warn(String.format("getSampleByCode(\"%s\") returned null.", sampleCode));
       return null;
     }
@@ -1041,15 +1100,18 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      SampleSearchCriteria ssc = new SampleSearchCriteria();
-      ssc.withIdentifier().thatEquals(sampleIdentifier);
+      Map<ISampleId,Sample> sample =
+              v3.getSamples(sessionToken,
+                            Collections.singletonList(new SampleIdentifier(sampleIdentifier)),
+                            fetchSamplesCompletely());
 
-      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
+      if (sample.isEmpty()) {
+        logger.info(String.format("No samples found with search in getSampleByIdentifier(\"%s\").", sampleIdentifier));
+        logger.warn(String.format("getSampleByIdentifier(\"%s\") returned null.", sampleIdentifier));
+        return null;
+      }
 
-      if (samples.getTotalCount() == 0)
-        logger.info(String.format("No samples found with getSampleByIdentifier(\"%s\").", sampleIdentifier));
-
-      return samples.getObjects().isEmpty() ? null : samples.getObjects().get(0);
+      return sample.get( new SampleIdentifier(sampleIdentifier) );
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
@@ -1059,33 +1121,34 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Get samples with its parents and children objects also fetched entirely.
-   * @param sampleCode Code of the openBIS sample
+   * Get a sample with its parents and children objects also fetched entirely.
+   * @param sampleIdentifier Identifier of the openBIS sample
    * @return List of openBIS v3 Sample
    */
   @Override
-  public List<Sample> getSamplesWithParentsAndChildren(String sampleCode) {
-    // ToDo: Unclear if parents and children should be fetched or directly included into the list.
+  public Sample getSamplesWithParentsAndChildren(String sampleIdentifier) {
+    // Note: Up until version 1.4.0 this method was used to get all sample objects of a project directly included in a list.
+    //       That means you should replace this method e.g. in the projectwizard-portlet with getSamplesOfProject(String)
     ensureLoggedIn();
 
     try {
-      SampleSearchCriteria ssc = new SampleSearchCriteria();
-      ssc.withCode().thatEquals(sampleCode);
+      Map<ISampleId,Sample> sample =
+              v3.getSamples(
+                      sessionToken,
+                      Collections.singletonList(new SampleIdentifier(sampleIdentifier)),
+                      fetchSamplesWithParentsAndChildrenCompletely());
 
-      SampleFetchOptions sampleFetchOptions = fetchSamplesCompletely();
-      sampleFetchOptions.withChildrenUsing(fetchSamplesCompletely());
-      sampleFetchOptions.withParentsUsing(fetchSamplesCompletely());
+      if (sample.isEmpty()) {
+        logger.info(String.format("No samples found with search in getSamplesWithParentsAndChildren(\"%s\").", sampleIdentifier));
+        logger.warn(String.format("getSamplesWithParentsAndChildren(\"%s\") returned null.", sampleIdentifier));
+        return null;
+      }
 
-      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
-
-      if (samples.getTotalCount() == 0)
-        logger.info(String.format("No samples found with getSamplesWithParentsAndChildren(\"%s\").", sampleCode));
-
-      return samples.getObjects();
+      return sample.get( new SampleIdentifier(sampleIdentifier) );
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
-      logger.warn(String.format("getSamplesWithParentsAndChildren(\"%s\") returned null.", sampleCode));
+      logger.warn(String.format("getSamplesWithParentsAndChildren(\"%s\") returned null.", sampleIdentifier));
       return null;
     }
   }
@@ -1099,21 +1162,30 @@ public class OpenBisClient implements IOpenBisClient {
   public List<Sample> getSamplesOfType(String typeCode) {
     ensureLoggedIn();
 
-    try {
-      SampleSearchCriteria ssc = new SampleSearchCriteria();
-      ssc.withType().withCode().thatEquals(typeCode);
+    List<Sample> allSamples = listSamples();
+    List<Sample> samples = new ArrayList<>();
 
-      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
-
-      if (samples.getTotalCount() == 0)
-        logger.info(String.format("No samples found with getSamplesOfType(\"%s\").", typeCode));
-
-      return samples.getObjects();
-
-    } catch (UserFailureException ufe) {
-      logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
+    if (allSamples == null) {
+      logger.error("listSamples() in getSamplesOfType(\"%s\") returned null.");
       logger.warn(String.format("getSamplesOfType(\"%s\") returned null.", typeCode));
       return null;
+
+    } else if (allSamples.isEmpty()) {
+      logger.info(String.format("listSamples() in getSamplesOfType(\"%s\") returned empty list.", typeCode));
+      logger.warn(String.format("getSamplesOfType(\"%s\") returned empty list.", typeCode));
+      return samples;
+
+    } else {
+      for (Sample sample : allSamples) {
+        logger.debug(typeCode + " - " + sample.getType().getCode() + " - " + typeCode.equals(sample.getType().getCode()));
+        if (sample.getType().getCode().equals(typeCode))
+          samples.add(sample);
+      }
+
+      if (samples.isEmpty())
+        logger.info(String.format("No samples found with getSamplesOfType(\"%s\").", typeCode));
+
+      return samples;
     }
   }
 
@@ -1131,7 +1203,8 @@ public class OpenBisClient implements IOpenBisClient {
       SampleTypeSearchCriteria stsc = new SampleTypeSearchCriteria();
       stsc.withCode().thatEquals(typeCode);
 
-      SearchResult<SampleType> sampleTypes = v3.searchSampleTypes(sessionToken, stsc, fetchSampleTypesCompletely());
+      SearchResult<SampleType> sampleTypes =
+              v3.searchSampleTypes(sessionToken, stsc, fetchSampleTypesCompletely());
 
       if (sampleTypes.getTotalCount() == 0)
         logger.info(String.format("No sample types found with getSampleTypeByString(\"%s\").", typeCode));
@@ -1154,7 +1227,8 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      SearchResult<SampleType> sampleTypes = v3.searchSampleTypes(sessionToken, new SampleTypeSearchCriteria(), fetchSampleTypesCompletely());
+      SearchResult<SampleType> sampleTypes =
+              v3.searchSampleTypes(sessionToken, new SampleTypeSearchCriteria(), fetchSampleTypesCompletely());
 
       if (sampleTypes.getTotalCount() == 0)
         logger.info("No sample types found with getSampleTypes().");

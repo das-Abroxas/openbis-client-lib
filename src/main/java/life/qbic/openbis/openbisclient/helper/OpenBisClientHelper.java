@@ -42,9 +42,15 @@ public class OpenBisClientHelper {
     return spaceFetchOptions;
   }
 
+  public static SpaceFetchOptions fetchSpacesWithSamples() {
+    SpaceFetchOptions spaceFetchOptions = new SpaceFetchOptions();
+    spaceFetchOptions.withSamplesUsing(fetchSamplesCompletely());
+
+    return spaceFetchOptions;
+  }
+
   public static SampleFetchOptions fetchSamplesCompletely() {
     SampleFetchOptions sampleFetchOptions = new SampleFetchOptions();
-    sampleFetchOptions.withChildrenUsing(sampleFetchOptions);
     sampleFetchOptions.withExperiment();
     sampleFetchOptions.withAttachments();
     sampleFetchOptions.withComponents();
@@ -53,13 +59,36 @@ public class OpenBisClientHelper {
     sampleFetchOptions.withHistory();
     sampleFetchOptions.withMaterialProperties();
     sampleFetchOptions.withModifier();
-    //TODO Project could not be fetched
+    sampleFetchOptions.withProject();
     sampleFetchOptions.withProperties();
     sampleFetchOptions.withRegistrator();
     sampleFetchOptions.withSpace();
     sampleFetchOptions.withTags();
     sampleFetchOptions.withType();
+    sampleFetchOptions.withChildren();
     sampleFetchOptions.withParents();
+
+    return sampleFetchOptions;
+  }
+
+  public static SampleFetchOptions fetchSamplesWithParentsAndChildrenCompletely() {
+    SampleFetchOptions sampleFetchOptions = new SampleFetchOptions();
+    sampleFetchOptions.withExperiment();
+    sampleFetchOptions.withAttachments();
+    sampleFetchOptions.withComponents();
+    sampleFetchOptions.withContainer();
+    sampleFetchOptions.withDataSets();
+    sampleFetchOptions.withHistory();
+    sampleFetchOptions.withMaterialProperties();
+    sampleFetchOptions.withModifier();
+    sampleFetchOptions.withProject();
+    sampleFetchOptions.withProperties();
+    sampleFetchOptions.withRegistrator();
+    sampleFetchOptions.withSpace();
+    sampleFetchOptions.withTags();
+    sampleFetchOptions.withType();
+    sampleFetchOptions.withChildrenUsing(fetchSamplesCompletely());
+    sampleFetchOptions.withParentsUsing(fetchSamplesCompletely());
 
     return sampleFetchOptions;
   }
@@ -73,8 +102,15 @@ public class OpenBisClientHelper {
     projectFetchOptions.withSpace();
     projectFetchOptions.withExperiments();
     projectFetchOptions.withLeader();
-    //TODO Samples could not be fetched
+    projectFetchOptions.withSamples();
     projectFetchOptions.withSpace();
+
+    return projectFetchOptions;
+  }
+
+  public static ProjectFetchOptions fetchProjectsWithSamples() {
+    ProjectFetchOptions projectFetchOptions = new ProjectFetchOptions();
+    projectFetchOptions.withSamplesUsing(fetchSamplesCompletely());
 
     return projectFetchOptions;
   }
@@ -96,6 +132,13 @@ public class OpenBisClientHelper {
     return experimentFetchOptions;
   }
 
+  public static ExperimentFetchOptions fetchExperimentsWithSamples() {
+    ExperimentFetchOptions experimentFetchOptions = new ExperimentFetchOptions();
+    experimentFetchOptions.withSamplesUsing(fetchSamplesCompletely());
+
+    return experimentFetchOptions;
+  }
+
   public static DataSetFetchOptions fetchDataSetsCompletely() {
     DataSetFetchOptions dataSetFetchOptions = new DataSetFetchOptions();
     dataSetFetchOptions.withProperties();
@@ -112,6 +155,28 @@ public class OpenBisClientHelper {
     dataSetFetchOptions.withPhysicalData();
     dataSetFetchOptions.withRegistrator();
     dataSetFetchOptions.withSample();
+    dataSetFetchOptions.withTags();
+    dataSetFetchOptions.withType();
+
+    return dataSetFetchOptions;
+  }
+
+  public static DataSetFetchOptions fetchDataSetsWithSampleCompletely() {
+    DataSetFetchOptions dataSetFetchOptions = new DataSetFetchOptions();
+    dataSetFetchOptions.withSampleUsing(fetchSamplesCompletely());
+    dataSetFetchOptions.withProperties();
+    dataSetFetchOptions.withChildren();
+    dataSetFetchOptions.withComponents();
+    dataSetFetchOptions.withContainers();
+    dataSetFetchOptions.withDataStore();
+    dataSetFetchOptions.withExperiment();
+    dataSetFetchOptions.withHistory();
+    dataSetFetchOptions.withLinkedData();
+    dataSetFetchOptions.withMaterialProperties();
+    dataSetFetchOptions.withModifier();
+    dataSetFetchOptions.withParents();
+    dataSetFetchOptions.withPhysicalData();
+    dataSetFetchOptions.withRegistrator();
     dataSetFetchOptions.withTags();
     dataSetFetchOptions.withType();
 
