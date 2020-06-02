@@ -33,6 +33,7 @@ public class OpenBisClientHelper {
     return personFetchOptions;
   }
 
+
   public static SpaceFetchOptions fetchSpacesCompletely() {
     SpaceFetchOptions spaceFetchOptions = new SpaceFetchOptions();
     spaceFetchOptions.withProjects();
@@ -48,6 +49,7 @@ public class OpenBisClientHelper {
 
     return spaceFetchOptions;
   }
+
 
   public static SampleFetchOptions fetchSamplesCompletely() {
     SampleFetchOptions sampleFetchOptions = new SampleFetchOptions();
@@ -93,6 +95,14 @@ public class OpenBisClientHelper {
     return sampleFetchOptions;
   }
 
+  public static SampleFetchOptions fetchSamplesWithDataSets() {
+    SampleFetchOptions sampleFetchOptions = new SampleFetchOptions();
+    sampleFetchOptions.withDataSetsUsing(fetchDataSetsCompletely());
+
+    return sampleFetchOptions;
+  }
+
+
   public static ProjectFetchOptions fetchProjectsCompletely() {
     ProjectFetchOptions projectFetchOptions = new ProjectFetchOptions();
     projectFetchOptions.withAttachments();
@@ -114,6 +124,14 @@ public class OpenBisClientHelper {
 
     return projectFetchOptions;
   }
+
+  public static ProjectFetchOptions fetchProjectsWithSamplesAndDataSets() {
+    ProjectFetchOptions projectFetchOptions = new ProjectFetchOptions();
+    projectFetchOptions.withSamplesUsing(fetchSamplesWithDataSets());
+
+    return projectFetchOptions;
+  }
+
 
   public static ExperimentFetchOptions fetchExperimentsCompletely() {
     ExperimentFetchOptions experimentFetchOptions = new ExperimentFetchOptions();
@@ -138,6 +156,14 @@ public class OpenBisClientHelper {
 
     return experimentFetchOptions;
   }
+
+  public static ExperimentFetchOptions fetchExperimentsWithDataSets() {
+    ExperimentFetchOptions experimentFetchOptions = new ExperimentFetchOptions();
+    experimentFetchOptions.withDataSetsUsing(fetchDataSetsCompletely());
+
+    return experimentFetchOptions;
+  }
+
 
   public static DataSetFetchOptions fetchDataSetsCompletely() {
     DataSetFetchOptions dataSetFetchOptions = new DataSetFetchOptions();
@@ -183,6 +209,7 @@ public class OpenBisClientHelper {
     return dataSetFetchOptions;
   }
 
+
   public static SampleTypeFetchOptions fetchSampleTypesCompletely() {
     SampleTypeFetchOptions sampleTypeFetchOption = new SampleTypeFetchOptions();
     sampleTypeFetchOption.withPropertyAssignments();
@@ -196,6 +223,7 @@ public class OpenBisClientHelper {
 
     return experimentTypeFetchOptions;
   }
+
 
   public static VocabularyFetchOptions fetchVocabularyCompletely() {
     VocabularyFetchOptions vocabularyFetchOptions = new VocabularyFetchOptions();
@@ -212,6 +240,7 @@ public class OpenBisClientHelper {
 
     return vocabularyTermFetchOptions;
   }
+
 
   public static PropertyAssignmentFetchOptions fetchPropertyAssignmentCompletely() {
     PropertyAssignmentFetchOptions propertyAssignmentFetchOptions = new PropertyAssignmentFetchOptions();

@@ -5,7 +5,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.attachment.Attachment;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.interfaces.IEntityType;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search.SearchResult;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.DataSet;
-import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.search.DataSetSearchCriteria;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.id.IDataSetId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.entitytype.id.EntityTypePermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.Experiment;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.ExperimentType;
@@ -13,6 +13,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.create.ExperimentCrea
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.fetchoptions.ExperimentFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.id.ExperimentIdentifier;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.id.ExperimentPermId;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.id.IExperimentId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.search.ExperimentSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.search.ExperimentTypeSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.person.Person;
@@ -20,6 +21,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.person.search.PersonSearchCriter
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.Project;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.create.ProjectCreation;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.fetchoptions.ProjectFetchOptions;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.id.IProjectId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.id.ProjectIdentifier;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.id.ProjectPermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.search.ProjectSearchCriteria;
@@ -52,8 +54,10 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.search.VocabularySear
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.search.VocabularyTermSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.exceptions.NotFetchedException;
 import ch.ethz.sis.openbis.generic.dssapi.v3.IDataStoreServerApi;
+
 import ch.systemsx.cisd.common.exceptions.UserFailureException;
 import ch.systemsx.cisd.common.spring.HttpInvokerUtils;
+
 import org.apache.commons.lang3.text.WordUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -1189,7 +1193,6 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
-
   /**
    * Get sample type for the provided openBIS sample type code.
    * @param typeCode Code of the openBIS sample type
@@ -1259,12 +1262,23 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      List<DataSet> datasets = new ArrayList<>();
+      SearchResult<Experiment> experiments =
+              v3.searchExperiments(sessionToken, new ExperimentSearchCriteria(), fetchExperimentsWithDataSets());
 
-      if (datasets.getTotalCount() == 0)
+      for (Experiment experiment : experiments.getObjects()) {
+        try {
+          datasets.addAll(experiment.getDataSets());
+
+        } catch (NotFetchedException nfe) {
+          System.out.printf("Experiment %s has no fetched samples.", experiment.getCode());
+        }
+      }
+
+      if (datasets.isEmpty())
         logger.info("No datasets found with listDatasets().");
 
-      return datasets.getObjects();
+      return datasets;
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
@@ -1282,16 +1296,31 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn(user);
 
     try {
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      List<DataSet> datasets = new ArrayList<>();
+      SearchResult<Experiment> experiments =
+              v3.searchExperiments(sessionToken, new ExperimentSearchCriteria(), fetchExperimentsWithDataSets());
 
-      if (datasets.getTotalCount() == 0)
-        logger.info(String.format("No datasets found with listDatasetsForUser(\"%s\").", user));
+      if (experiments.getTotalCount() == 0)
+        logger.info("No datasets found with listDatasets().");
 
-      return datasets.getObjects();
+      for (Experiment experiment : experiments.getObjects()) {
+        try {
+          datasets.addAll(experiment.getDataSets());
+
+        } catch (NotFetchedException nfe) {
+          System.out.printf("Experiment %s has no fetched samples.", experiment.getCode());
+        }
+      }
+
+      return datasets;
 
     } catch (UserFailureException ufe) {
-      logger.error(String.format("Could not fetch datasets of user %s. Does this user exist in openBIS?", user));
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn(String.format("listDatasetsForUser(\"%s\") returned null.", user));
+      return null;
+    } catch (IllegalArgumentException iae) {
+      logger.error(String.format("Could not fetch samples of user %s. Does this user exist in openBIS?", user));
+      logger.warn(String.format("listSamplesForUser(\"%s\") returned null.", user));
       return null;
     }
   }
@@ -1306,15 +1335,25 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
-      dssc.withSample().withSpace().withCode().thatEquals(spaceCode);
+      ExperimentSearchCriteria esc = new ExperimentSearchCriteria();
+      esc.withProject().withSpace().withCode().thatEquals(spaceCode);
 
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, dssc, fetchDataSetsCompletely());
+      List<DataSet> datasets = new ArrayList<>();
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, esc, fetchExperimentsWithDataSets());
 
-      if (datasets.getTotalCount() == 0)
+      for (Experiment experiment : experiments.getObjects()) {
+        try {
+          datasets.addAll(experiment.getDataSets());
+
+        } catch (NotFetchedException nfe) {
+          System.out.printf("Experiment %s has no fetched datasets.", experiment.getCode());
+        }
+      }
+
+      if (datasets.isEmpty())
         logger.info(String.format("No datasets found with getDataSetsOfSpace(\"%s\").", spaceCode));
 
-      return datasets.getObjects();
+      return datasets;
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
@@ -1333,17 +1372,23 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
-      dssc.withSample().withProject().withCodes().thatIn( projects.stream().map(Project::getCode).collect(Collectors.toList()) );
+      List<DataSet> datasets = new ArrayList<>();
+      List<IProjectId> projectIDs = projects.stream().map(Project::getIdentifier).collect(Collectors.toList());
 
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      Map<IProjectId, Project> projectMap = v3.getProjects(sessionToken, projectIDs, fetchProjectsWithSamplesAndDataSets());
 
-      if (datasets.getTotalCount() == 0)
-        logger.info(String.format("No datasets found with getDataSetsOfProjects(\"%s\").", projects));
+      for (Project project : projectMap.values()) {
+        for (Sample sample : project.getSamples()) {
+          datasets.addAll( sample.getDataSets() );
+        }
+      }
 
-      return datasets.getObjects();
+      if (datasets.isEmpty())
+        logger.info(String.format("No datasets found with getDataSetsOfProjects(%s).", projects));
 
-    } catch (UserFailureException ufe) {
+      return datasets;
+
+    }  catch (UserFailureException ufe) {
       logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn(String.format("getDataSetsOfProjects(\"%s\") returned null.", projects));
       return null;
@@ -1352,29 +1397,39 @@ public class OpenBisClient implements IOpenBisClient {
 
   /**
    * Get all datasets registered under the provided project code or identifier.
-   * @param projectCodeIdentifier Code or identifier of the openBIS project
+   * @param projectCodeOrIdentifier Code or identifier of the openBIS project
    * @return List of openBIS v3 DataSet
    */
   @Override
-  public List<DataSet> getDataSetsOfProject(String projectCodeIdentifier) {
+  public List<DataSet> getDataSetsOfProject(String projectCodeOrIdentifier) {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
-      dssc.withOrOperator();
-      dssc.withSample().withProject().withCode().thatEquals(projectCodeIdentifier);
-      dssc.withSample().withProject().withId().thatEquals( new ProjectIdentifier(projectCodeIdentifier) );
+      ExperimentSearchCriteria esc = new ExperimentSearchCriteria();
+      esc.withOrOperator();
+      esc.withProject().withCode().thatEquals(projectCodeOrIdentifier);
+      esc.withProject().withId().thatEquals( new ProjectIdentifier(projectCodeOrIdentifier) );
 
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      List<DataSet> datasets = new ArrayList<>();
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, esc, fetchExperimentsWithDataSets());
 
-      if (datasets.getTotalCount() == 0)
-        logger.info(String.format("No datasets found with getDataSetsOfProject(\"%s\").", projectCodeIdentifier));
+      for (Experiment experiment : experiments.getObjects()) {
+        try {
+          datasets.addAll(experiment.getDataSets());
 
-      return datasets.getObjects();
+        } catch (NotFetchedException nfe) {
+          System.out.printf("Experiment %s has no fetched samples.", experiment.getCode());
+        }
+      }
+
+      if (datasets.isEmpty())
+        logger.info(String.format("No datasets found with getDataSetsOfProject(\"%s\").", projectCodeOrIdentifier));
+
+      return datasets;
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
-      logger.warn(String.format("getDataSetsOfProjects(\"%s\") returned null.", projectCodeIdentifier));
+      logger.warn(String.format("getDataSetsOfProjects(\"%s\") returned null.", projectCodeOrIdentifier));
       return null;
     }
   }
@@ -1386,20 +1441,30 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public List<DataSet> listDataSetsForExperiments(List<String> experimentCodes) {
+    // Note: Performance-wise a catastrophe.
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
-      dssc.withExperiment().withCodes().thatIn( experimentCodes );
+      List<DataSet> datasets = new ArrayList<>();
+      List<Experiment> experiments = new ArrayList<>();
 
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      for (String code : experimentCodes)
+        experiments.add( getExperimentByCode(code) );
 
-      if (datasets.getTotalCount() == 0)
-        logger.info(String.format("No datasets found with listDataSetsForExperiments(\"%s\").", experimentCodes));
+      while (experiments.remove(null));  // Remove all null from list of experiments
 
-      return datasets.getObjects();
+      List<IExperimentId> experimentIDs = experiments.stream().map(Experiment::getIdentifier).collect(Collectors.toList());
+      Map<IExperimentId, Experiment> experimentMap = v3.getExperiments(sessionToken, experimentIDs, fetchExperimentsWithDataSets());
 
-    } catch (UserFailureException ufe) {
+      for (Experiment experiment : experimentMap.values())
+          datasets.addAll( experiment.getDataSets() );
+
+      if (datasets.isEmpty())
+        logger.info(String.format("No datasets found with listDataSetsForExperiments(%s).", experimentCodes));
+
+      return datasets;
+
+    }  catch (UserFailureException ufe) {
       logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn(String.format("listDataSetsForExperiments(\"%s\") returned null.", experimentCodes));
       return null;
@@ -1416,15 +1481,25 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
-      dssc.withExperiment().withIdentifier().thatEquals(experimentIdentifier);
+      ExperimentSearchCriteria esc = new ExperimentSearchCriteria();
+      esc.withId().thatEquals( new ExperimentIdentifier(experimentIdentifier) );
 
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, dssc, fetchDataSetsCompletely());
+      List<DataSet> datasets = new ArrayList<>();
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, esc, fetchExperimentsWithDataSets());
 
-      if (datasets.getTotalCount() == 0)
+      for (Experiment experiment : experiments.getObjects()) {
+        try {
+          datasets.addAll(experiment.getDataSets());
+
+        } catch (NotFetchedException nfe) {
+          System.out.printf("Experiment %s has no fetched samples.", experiment.getCode());
+        }
+      }
+
+      if (datasets.isEmpty())
         logger.info(String.format("No datasets found with getDataSetsOfExperimentByIdentifier(\"%s\").", experimentIdentifier));
 
-      return datasets.getObjects();
+      return datasets;
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
@@ -1443,15 +1518,25 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
-      dssc.withExperiment().withPermId().thatEquals(experimentPermID);
+      ExperimentSearchCriteria esc = new ExperimentSearchCriteria();
+      esc.withPermId().thatEquals( experimentPermID );
 
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, dssc, fetchDataSetsCompletely());
+      List<DataSet> datasets = new ArrayList<>();
+      SearchResult<Experiment> experiments = v3.searchExperiments(sessionToken, esc, fetchExperimentsWithDataSets());
 
-      if (datasets.getTotalCount() == 0)
+      for (Experiment experiment : experiments.getObjects()) {
+        try {
+          datasets.addAll(experiment.getDataSets());
+
+        } catch (NotFetchedException nfe) {
+          logger.warn( String.format("Experiment %s has no fetched samples.", experiment.getCode()) );
+        }
+      }
+
+      if (datasets.isEmpty())
         logger.info(String.format("No datasets found with getDataSetsOfExperiment(\"%s\").", experimentPermID));
 
-      return datasets.getObjects();
+      return datasets;
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
@@ -1467,20 +1552,30 @@ public class OpenBisClient implements IOpenBisClient {
    */
   @Override
   public List<DataSet> listDataSetsForSamples(List<String> sampleCodes) {
+    // Note: Performance-wise a catastrophe.
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
-      dssc.withSample().withCodes().thatIn( sampleCodes );
+      List<DataSet> datasets = new ArrayList<>();
+      List<Sample> samples = new ArrayList<>();
 
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      for (String code : sampleCodes)
+        samples.add( getSampleByCode(code) );
 
-      if (datasets.getTotalCount() == 0)
-        logger.info(String.format("No datasets found with listDataSetsForSamples(\"%s\").", sampleCodes));
+      while (samples.remove(null));  // Remove all null from list of samples
 
-      return datasets.getObjects();
+      List<ISampleId> sampleIDs = samples.stream().map(Sample::getIdentifier).collect(Collectors.toList());
+      Map<ISampleId, Sample> sampleMap = v3.getSamples(sessionToken, sampleIDs, fetchSamplesWithDataSets());
 
-    } catch (UserFailureException ufe) {
+      for (Sample sample : sampleMap.values())
+        datasets.addAll( sample.getDataSets() );
+
+      if (datasets.isEmpty())
+        logger.info(String.format("No datasets found with listDataSetsForSamples(%s).", sampleCodes));
+
+      return datasets;
+
+    }  catch (UserFailureException ufe) {
       logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn(String.format("listDataSetsForSamples(\"%s\") returned null.", sampleCodes));
       return null;
@@ -1510,15 +1605,29 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
-      dssc.withSample().withCode().thatEquals(sampleCode);
+      List<DataSet> datasets = new ArrayList<>();
+      Sample sample = getSampleByCode(sampleCode);
 
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, dssc, fetchDataSetsCompletely());
+      if (sample == null) {
+        logger.error(String.format("getSampleByCode(\"%s\") in getDataSetsOfSampleByCode(\"%s\") returned null.", sampleCode, sampleCode));
+        logger.warn(String.format("getDataSetsOfSampleByCode(\"%s\") returned null.", sampleCode));
+        return null;
+      }
 
-      if (datasets.getTotalCount() == 0)
+      try {
+        List<IDataSetId> datasetIDs = sample.getDataSets().stream().map(DataSet::getPermId).collect(Collectors.toList());
+        Map<IDataSetId, DataSet> dataSetMap = v3.getDataSets(sessionToken, datasetIDs, fetchDataSetsCompletely());
+
+        datasetIDs.forEach( ds -> datasets.add( dataSetMap.get(ds) ) );
+
+      } catch (NotFetchedException nfe) {
+        logger.warn( String.format("Sample %s has no fetched datasets.", sampleCode) );
+      }
+
+      if (datasets.isEmpty())
         logger.info(String.format("No datasets found with getDataSetsOfSampleByCode(\"%s\").", sampleCode));
 
-      return datasets.getObjects();
+      return datasets;
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
@@ -1537,15 +1646,29 @@ public class OpenBisClient implements IOpenBisClient {
     ensureLoggedIn();
 
     try {
-      DataSetSearchCriteria ssc = new DataSetSearchCriteria();
-      ssc.withSample().withIdentifier().thatEquals(sampleIdentifier);
+      List<DataSet> datasets = new ArrayList<>();
+      Sample sample = getSampleByIdentifier(sampleIdentifier);
 
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, ssc, fetchDataSetsCompletely());
+      if (sample == null) {
+        logger.error(String.format("getSampleByIdentifier(\"%s\") in getDataSetsOfSampleByIdentifier(\"%s\") returned null.", sampleIdentifier, sampleIdentifier));
+        logger.warn(String.format("getDataSetsOfSampleByIdentifier(\"%s\") returned null.", sampleIdentifier));
+        return null;
+      }
 
-      if (datasets.getTotalCount() == 0)
+      try {
+        List<IDataSetId> datasetIDs = sample.getDataSets().stream().map(DataSet::getPermId).collect(Collectors.toList());
+        Map<IDataSetId, DataSet> dataSetMap = v3.getDataSets(sessionToken, datasetIDs, fetchDataSetsCompletely());
+
+        datasetIDs.forEach( ds -> datasets.add( dataSetMap.get(ds) ) );
+
+      } catch (NotFetchedException nfe) {
+        logger.warn( String.format("Sample %s has no fetched datasets.", sampleIdentifier) );
+      }
+
+      if (datasets.isEmpty())
         logger.info(String.format("No datasets found with getDataSetsOfSampleByIdentifier(\"%s\").", sampleIdentifier));
 
-      return datasets.getObjects();
+      return datasets;
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
@@ -1563,21 +1686,29 @@ public class OpenBisClient implements IOpenBisClient {
   public List<DataSet> getDataSetsByType(String typeCode) {
     ensureLoggedIn();
 
-    try {
-      DataSetSearchCriteria sc = new DataSetSearchCriteria();
-      sc.withType().withCode().thatEquals(typeCode);
+    List<DataSet> allDatasets = listDatasets();
+    List<DataSet> datasets = new ArrayList<>();
 
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, sc, fetchDataSetsCompletely());
-
-      if (datasets.getTotalCount() == 0)
-        logger.info(String.format("No datasets found with getDataSetsByType(\"%s\").", typeCode));
-
-      return datasets.getObjects();
-
-    } catch (UserFailureException ufe) {
-      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+    if (allDatasets == null) {
+      logger.error("listDatasets() in getDataSetsByType(\"%s\") returned null.");
       logger.warn(String.format("getDataSetsByType(\"%s\") returned null.", typeCode));
       return null;
+
+    } else if (allDatasets.isEmpty()) {
+      logger.info(String.format("listDatasets() in getDataSetsByType(\"%s\") returned empty list.", typeCode));
+      logger.warn(String.format("getDataSetsByType(\"%s\") returned empty list.", typeCode));
+      return datasets;
+
+    } else {
+      for (DataSet dataset : allDatasets) {
+        if (dataset.getType().getCode().equals(typeCode))
+          datasets.add(dataset);
+      }
+
+      if (datasets.isEmpty())
+        logger.info(String.format("No samples found with getDataSetsByType(\"%s\").", typeCode));
+
+      return datasets;
     }
   }
 
