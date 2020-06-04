@@ -1064,24 +1064,21 @@ public class OpenBisClient implements IOpenBisClient {
    * @return List of openBIS v3 Sample
    */
   @Override
-  public List<Sample> getSamplesWithParentsAndChildren(String sampleCode) {
-    // ToDo: Unclear if parents and children should be fetched or directly included into the list.
+  public Sample getSampleWithParentsAndChildren(String sampleCode) {
+    // Note: Up until version 1.4.0 this method was used to get all sample objects of a project directly included in a list.
+    //       That means you should replace this method e.g. in the projectwizard-portlet with getSamplesOfProject(String)
     ensureLoggedIn();
 
     try {
       SampleSearchCriteria ssc = new SampleSearchCriteria();
       ssc.withCode().thatEquals(sampleCode);
 
-      SampleFetchOptions sampleFetchOptions = fetchSamplesCompletely();
-      sampleFetchOptions.withChildrenUsing(fetchSamplesCompletely());
-      sampleFetchOptions.withParentsUsing(fetchSamplesCompletely());
-
-      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
+      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesWithParentsAndChildrenCompletely());
 
       if (samples.getTotalCount() == 0)
         logger.info(String.format("No samples found with getSamplesWithParentsAndChildren(\"%s\").", sampleCode));
 
-      return samples.getObjects();
+      return samples.getObjects().isEmpty() ? null : samples.getObjects().get(0);
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");

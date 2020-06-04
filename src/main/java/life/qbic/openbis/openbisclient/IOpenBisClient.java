@@ -108,8 +108,7 @@ public interface IOpenBisClient {
    * @param sampCode code of the openBIS sample
    * @return sample
    */
-  List<Sample> getSamplesWithParentsAndChildren(String sampCode);
-
+  Sample getSampleWithParentsAndChildren(String sampCode);
 
   /**
    * returns a list of all Experiments connected to the project with the identifier from openBis

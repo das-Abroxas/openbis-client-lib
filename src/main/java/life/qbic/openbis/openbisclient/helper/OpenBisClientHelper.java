@@ -146,6 +146,28 @@ public class OpenBisClientHelper {
     return sampleFetchOptions;
   }
 
+  public static SampleFetchOptions fetchSamplesWithParentsAndChildrenCompletely() {
+    SampleFetchOptions sampleFetchOptions = new SampleFetchOptions();
+    sampleFetchOptions.withRegistrator();
+    sampleFetchOptions.withSpace();
+    sampleFetchOptions.withProject();
+    sampleFetchOptions.withExperiment();
+    sampleFetchOptions.withDataSets();
+    sampleFetchOptions.withAttachments();
+    sampleFetchOptions.withComponents();
+    sampleFetchOptions.withContainer();
+    sampleFetchOptions.withHistory();
+    sampleFetchOptions.withModifier();
+    sampleFetchOptions.withMaterialProperties();
+    sampleFetchOptions.withProperties();
+    sampleFetchOptions.withTags();
+    sampleFetchOptions.withType();
+    sampleFetchOptions.withParentsUsing(fetchSamplesCompletely());
+    sampleFetchOptions.withChildrenUsing(fetchSamplesCompletely());
+
+    return sampleFetchOptions;
+  }
+
   public static SampleTypeFetchOptions fetchSampleTypesCompletely() {
     SampleTypeFetchOptions sampleTypeFetchOption = new SampleTypeFetchOptions();
     sampleTypeFetchOption.withPropertyAssignments();

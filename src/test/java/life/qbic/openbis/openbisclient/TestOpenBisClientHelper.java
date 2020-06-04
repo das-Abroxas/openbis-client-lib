@@ -24,8 +24,7 @@ public class TestOpenBisClientHelper {
     sample.getModificationDate();
     sample.getModifier();
     sample.getParents();
-    //TODO Project could not be fetched
-    //sample.getProject();
+    sample.getProject();
     sample.getPermId();
     sample.getProperties();
     sample.getRegistrationDate();
@@ -50,8 +49,7 @@ public class TestOpenBisClientHelper {
     project.getDescription();
     project.getExperiments();
     project.getLeader();
-    //TODO Samples could not be fetched
-    //project.getSamples();
+    project.getSamples();
     project.getSpace();
   }
 
