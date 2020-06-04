@@ -1,12 +1,11 @@
 package life.qbic.openbis.openbisclient;
 
-import static life.qbic.openbis.openbisclient.helper.OpenBisClientHelper.*;
-
 import ch.ethz.sis.openbis.generic.asapi.v3.IApplicationServerApi;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.attachment.Attachment;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.interfaces.IEntityType;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search.SearchResult;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.DataSet;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.id.DataSetPermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.search.DataSetSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.entitytype.id.EntityTypePermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.Experiment;
@@ -55,8 +54,21 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.search.VocabularySear
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.search.VocabularyTermSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.exceptions.NotFetchedException;
 import ch.ethz.sis.openbis.generic.dssapi.v3.IDataStoreServerApi;
+import ch.ethz.sis.openbis.generic.dssapi.v3.dto.datasetfile.DataSetFile;
+import ch.ethz.sis.openbis.generic.dssapi.v3.dto.datasetfile.download.DataSetFileDownload;
+import ch.ethz.sis.openbis.generic.dssapi.v3.dto.datasetfile.download.DataSetFileDownloadOptions;
+import ch.ethz.sis.openbis.generic.dssapi.v3.dto.datasetfile.download.DataSetFileDownloadReader;
+import ch.ethz.sis.openbis.generic.dssapi.v3.dto.datasetfile.fetchoptions.DataSetFileFetchOptions;
+import ch.ethz.sis.openbis.generic.dssapi.v3.dto.datasetfile.id.DataSetFilePermId;
+import ch.ethz.sis.openbis.generic.dssapi.v3.dto.datasetfile.id.IDataSetFileId;
+import ch.ethz.sis.openbis.generic.dssapi.v3.dto.datasetfile.search.DataSetFileSearchCriteria;
 import ch.systemsx.cisd.common.exceptions.UserFailureException;
 import ch.systemsx.cisd.common.spring.HttpInvokerUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.text.WordUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -1500,6 +1512,205 @@ public class OpenBisClient implements IOpenBisClient {
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn(String.format("getDataSetsByType(\"%s\") returned null.", typeCode));
+      return null;
+    }
+  }
+
+
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- DataSetFile / Download Streams ----------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
+  /**
+   * Get all dataset files which are registered under the dataset code.
+   * @param datasetCode Code of openBIS DataSet
+   * @return List of openBIS v3 DataSetFile
+   */
+  public List<DataSetFile> listDataSetFiles(String datasetCode) {
+    ensureLoggedIn();
+
+    try {
+      DataSetFileSearchCriteria dsfsc = new DataSetFileSearchCriteria();
+      dsfsc.withDataSet().withCode().thatEquals(datasetCode);
+
+      SearchResult<DataSetFile> datasetfiles = dss3.searchFiles(sessionToken, dsfsc, new DataSetFileFetchOptions());
+
+      if (datasetfiles.getTotalCount() == 0)
+        logger.info(String.format("No dataset files found with listDataSetFiles(\"%s\").", datasetCode));
+
+      return datasetfiles.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch dataset files. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("listDataSetFilesForUser(\"%s\") returned null.", datasetCode));
+      return null;
+    }
+  }
+
+  /**
+   * Get all dataset files which are registered under any of the provided dataset codes.
+   * @param datasetCodes List of openBIS DataSet codes
+   * @return List of openBIS v3 DataSetFile
+   */
+  public List<DataSetFile> listDataSetFiles(List<String> datasetCodes) {
+    ensureLoggedIn();
+
+    try {
+      DataSetFileSearchCriteria dsfsc = new DataSetFileSearchCriteria();
+      dsfsc.withDataSet().withCodes().thatIn(datasetCodes);
+
+      SearchResult<DataSetFile> datasetFiles = dss3.searchFiles(sessionToken, dsfsc, new DataSetFileFetchOptions());
+
+      if (datasetFiles.getTotalCount() == 0)
+        logger.info(String.format("No dataset files found with listDataSetFiles(%s).", datasetCodes));
+
+      return datasetFiles.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch dataset files. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("listDataSetFiles(%s) returned null.", datasetCodes));
+      return null;
+    }
+  }
+
+  /**
+   * Get all dataset files which are registered under the dataset code
+   *   if the provided user has the permission to access the dataset.
+   * @param datasetCode Code of openBIS DataSet
+   * @param user openBIS user name
+   * @return List of openBIS v3 DataSetFile
+   */
+  public List<DataSetFile> listDataSetFilesForUser(String datasetCode, String user) {
+    ensureLoggedIn(user);
+
+    try {
+      DataSetFileSearchCriteria dsfsc = new DataSetFileSearchCriteria();
+      dsfsc.withDataSet().withCode().thatEquals(datasetCode);
+
+      SearchResult<DataSetFile> datasetfiles = dss3.searchFiles(sessionToken, dsfsc, new DataSetFileFetchOptions());
+
+      if (datasetfiles.getTotalCount() == 0)
+        logger.info(String.format("No dataset files found with listDataSetFiles(\"%s\").", datasetCode));
+
+      return datasetfiles.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch dataset files. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("listDataSetFilesForUser(\"%s\", \"%s\") returned null.", datasetCode, user));
+      return null;
+    } catch (IllegalArgumentException iae) {
+      logger.error(String.format("Could not fetch dataset files of user %s. Does this user exist in openBIS?", user));
+      logger.warn(String.format("listDataSetFilesForUser(\"%s\", \"%s\") returned null.", datasetCode, user));
+      return null;
+    }
+  }
+
+  /**
+   * Get all dataset files which are registered under any of the dataset codes
+   *   if the provided user has the permission to access the datasets.
+   * @param datasetCodes List of openBIS DataSet codes
+   * @param user openBIS user name
+   * @return List of openBIS v3 DataSetFile
+   */
+  public List<DataSetFile> listDataSetFilesForUser(List<String> datasetCodes, String user) {
+    ensureLoggedIn(user);
+
+    try {
+      DataSetFileSearchCriteria dsfsc = new DataSetFileSearchCriteria();
+      dsfsc.withDataSet().withCodes().thatIn(datasetCodes);
+
+      SearchResult<DataSetFile> datasetFiles = dss3.searchFiles(sessionToken, dsfsc, new DataSetFileFetchOptions());
+
+      if (datasetFiles.getTotalCount() == 0)
+        logger.info(String.format("No dataset files found with listDataSetFiles(%s).", datasetCodes));
+
+      return datasetFiles.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch dataset files. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("listDataSetFilesForUser(%s, \"%s\") returned null.", datasetCodes, user));
+      return null;
+    } catch (IllegalArgumentException iae) {
+      logger.error(String.format("Could not fetch dataset files of user %s. Does this user exist in openBIS?", user));
+      logger.warn(String.format("listDataSetFilesForUser(%s, \"%s\") returned null.", datasetCodes, user));
+      return null;
+    }
+  }
+
+  /**
+   * Get InputStream of dataset that can be used to recursively download all containing files.
+   * @param datasetCode Code of dataset
+   * @return InputStream of complete dataset
+   */
+  @Override
+  public InputStream getDatasetStream(String datasetCode) {
+    ensureLoggedIn();
+
+    try {
+      IDataSetFileId fileId = new DataSetFilePermId(new DataSetPermId(datasetCode));
+      DataSetFileDownloadOptions options = new DataSetFileDownloadOptions();
+      options.setRecursive(true);
+
+      return dss3.downloadFiles(sessionToken, Collections.singletonList(fileId), options);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create dataset download stream. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getDatasetStream(\"%s\") returned null.", datasetCode));
+      return null;
+    }
+  }
+
+  /**
+   * Get InputStream of directory in dataset that can be used to recursively download all containing files.
+   * @param datasetCode Code of dataset
+   * @param folder Name of directory in dataset
+   * @return InputStream of directory
+   */
+  @Override
+  public InputStream getDatasetStream(String datasetCode, String folder) {
+    ensureLoggedIn();
+
+    try {
+      IDataSetFileId fileId = new DataSetFilePermId(new DataSetPermId(datasetCode));
+      DataSetFileDownloadOptions options = new DataSetFileDownloadOptions();
+      options.setRecursive(true);
+
+      InputStream stream = dss3.downloadFiles(sessionToken, Collections.singletonList(fileId), options);
+
+      DataSetFileDownloadReader reader = new DataSetFileDownloadReader(stream);
+      DataSetFileDownload file;
+
+      while ((file = reader.read()) != null) {
+        if (file.getDataSetFile().isDirectory() && file.getDataSetFile().getPath().endsWith(folder)) {
+          return file.getInputStream();
+        }
+      }
+
+      return null;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create dataset download stream. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getDatasetStream(\"%s\", \"%s\") returned null.", datasetCode));
+      return null;
+    }
+  }
+
+  /**
+   * Get InputStream of specific file.
+   * @param file openBIS v3 DataSetFile
+   * @return InputStream of dataset file
+   */
+  public InputStream getDatasetStream(DataSetFile file) {
+    ensureLoggedIn();
+
+    try {
+      DataSetFileDownloadOptions options = new DataSetFileDownloadOptions();
+      options.setRecursive(false);
+
+      return dss3.downloadFiles(sessionToken, Collections.singletonList(file.getPermId()), options);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not create dataset download stream. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getDatasetStream(%s) returned null.", file));
       return null;
     }
   }
