@@ -92,7 +92,7 @@ public class OpenBisClient implements IOpenBisClient {
     this.password = password;
     this.serverUrl = serverURL;
     this.asApiUrl = serverURL + "/openbis/openbis"+ IApplicationServerApi.SERVICE_URL;
-    this.dsApiUrl = serverURL + "/datastore" + IDataStoreServerApi.SERVICE_URL;
+    this.dsApiUrl = serverURL + "/datastore_server" + IDataStoreServerApi.SERVICE_URL;
 
     // Get a reference to Application Server API and Datastore Server API
     v3 = HttpInvokerUtils.createServiceStub(IApplicationServerApi.class, asApiUrl, TIMEOUT);
