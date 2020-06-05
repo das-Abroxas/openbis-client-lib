@@ -375,6 +375,10 @@ public class OpenBisClient implements IOpenBisClient {
       return spaceIdentifiers;
 
     } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("listSpacesForUser(\"%s\") returned null.", user));
+      return null;
+    } catch (IllegalArgumentException iae) {
       logger.error(String.format("Could not fetch spaces of user %s. Does this user exist in openBIS?", user));
       logger.warn(String.format("listSpacesForUser(\"%s\") returned null.", user));
       return null;
@@ -425,6 +429,10 @@ public class OpenBisClient implements IOpenBisClient {
       return projects.getObjects();
 
     } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("listProjectsForUser(\"%s\") returned null.", user));
+      return null;
+    }  catch (IllegalArgumentException iae) {
       logger.error(String.format("Could not fetch projects of user %s. Does this user exist in openBIS?", user));
       logger.warn(String.format("listProjectsForUser(\"%s\") returned null.", user));
       return null;
@@ -610,6 +618,10 @@ public class OpenBisClient implements IOpenBisClient {
       return experiments.getObjects();
 
     } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("listExperimentsForUser(\"%s\") returned null.", user));
+      return null;
+    } catch (IllegalArgumentException iae) {
       logger.error(String.format("Could not fetch experiments of user %s. Does this user exist in openBIS?", user));
       logger.warn(String.format("listExperimentsForUser(\"%s\") returned null.", user));
       return null;
@@ -911,6 +923,10 @@ public class OpenBisClient implements IOpenBisClient {
       return samples.getObjects();
 
     } catch (UserFailureException ufe) {
+      logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("listSamplesForUser(\"%s\") returned null.", user));
+      return null;
+    } catch (IllegalArgumentException iae) {
       logger.error(String.format("Could not fetch samples of user %s. Does this user exist in openBIS?", user));
       logger.warn(String.format("listSamplesForUser(\"%s\") returned null.", user));
       return null;
@@ -1225,6 +1241,10 @@ public class OpenBisClient implements IOpenBisClient {
       return datasets.getObjects();
 
     } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("listDatasetsForUser(\"%s\") returned null.", user));
+      return null;
+    } catch (IllegalArgumentException iae) {
       logger.error(String.format("Could not fetch datasets of user %s. Does this user exist in openBIS?", user));
       logger.warn(String.format("listDatasetsForUser(\"%s\") returned null.", user));
       return null;
