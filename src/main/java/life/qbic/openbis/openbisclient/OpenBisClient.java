@@ -2918,6 +2918,178 @@ public class OpenBisClient implements IOpenBisClient {
 
 
   /* ------------------------------------------------------------------------------------ */
+  /* ----- Project TSV Generation ------------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
+  /**
+   * Returns lines of a spreadsheet of humanly readable information of the samples in a project.
+   * Only one requested layer of the data model is returned. Experimental factors are returned in
+   * the properties xml format and should be parsed before the spreadsheet is presented to the user.
+   *
+   * @param projectCode Code of the openBIS project
+   * @param sampleType Code of the openBIS sampleType that should be included in the result
+   */
+  @Override
+  public List<String> getProjectTSV(String projectCode, String sampleType) {
+    ensureLoggedIn();
+
+    Vocabulary voc   = getVocabulary("Q_NCBI_TAXONOMY");
+    List<String> res = new ArrayList<>();
+    List<Sample> typeSamples = getSamplesOfProject(projectCode).stream()
+            .filter(sample -> sampleType.equals(sample.getType().getCode()))
+            .collect(Collectors.toList());
+
+    String header = "QBiC Code\tSecondary Name\tLab ID\tSample Type\tAttributes\tSource";
+    header += (sampleType.equals("Q_TEST_SAMPLE")) ? "\tExtract Code(s)\tExtract Name(s)\tExtract Lab ID(s)" : "";
+    header += (!sampleType.equals("Q_BIOLOGICAL_ENTITY")) ? "\tSource Name(s)\tSource Lab ID(s)" : "";
+    res.add(header);
+
+    for (Sample sample : typeSamples) {
+      List<String> rows = new ArrayList<>();
+      String secName  = sample.getProperties().get("Q_SECONDARY_NAME");
+      String extID    = sample.getProperties().get("Q_EXTERNALDB_ID");
+      String props    = sample.getProperties().get("Q_PROPERTIES");
+      String extrType = sample.getProperties().get("Q_PRIMARY_TISSUE");
+
+      extrType = (extrType == null) ? null : sample.getProperties().get("Q_SAMPLE_TYPE");
+      extrType = ("CELL_LINE".equals(extrType)) ? sample.getProperties().get("Q_TISSUE_DETAILED") : extrType;
+
+      rows.add( sample.getCode() );
+      rows.add( (secName  == null) ? ""      : secName );   // If-Else as ternary operator
+      rows.add( (extID    == null) ? ""      : extID );     // If-Else as ternary operator
+      rows.add( (extrType == null) ? ""      : extrType );  // If-Else as ternary operator
+      rows.add( (props    == null) ? "<?xml" : props );     // If-Else as ternary operator
+      rows.add( fetchSource(Collections.singletonList(sample), voc.getTerms()) );
+
+      if (!sampleType.equals("Q_BIOLOGICAL_ENTITY")) {
+        Set<Sample> sources = fetchAncestorsOfType(Collections.singletonList(sample), "Q_BIOLOGICAL_ENTITY");
+        rows.add(getPropertyOfSamples(sources, "Q_SECONDARY_NAME"));
+        rows.add(getPropertyOfSamples(sources, "Q_EXTERNALDB_ID"));
+      }
+
+      if (sampleType.equals("Q_TEST_SAMPLE")) {
+        Set<Sample> extracts = fetchAncestorsOfType(Collections.singletonList(sample), "Q_BIOLOGICAL_SAMPLE");
+        List<String> codeL = new ArrayList<>();
+
+        for (Sample s : extracts) {
+          codeL.add(s.getCode());
+        }
+
+        rows.add(StringUtils.join(codeL, ", "));
+        rows.add(getPropertyOfSamples(extracts, "Q_SECONDARY_NAME"));
+        rows.add(getPropertyOfSamples(extracts, "Q_EXTERNALDB_ID"));
+      }
+
+      res.add(StringUtils.join(rows,"\t"));
+    }
+
+    return res;
+  }
+
+  /**
+   * Used by {@link #getProjectTSV(String, String) getProjectTSV} to get the Patient(s)/Source(s) of a list of samples.
+   * @param samples List of openBIS samples
+   * @param taxTerms List of openBIS vocabulary terms of the NCBI taxonomy vocabulary
+   * @return String representation of the root source(s) of the samples
+   */
+  private String fetchSource(List<Sample> samples, List<VocabularyTerm> taxTerms) {
+    List<String> res   = new ArrayList<>();
+    Set<Sample> roots  = new HashSet<>();
+    boolean isCellLine = false;
+
+    while (!samples.isEmpty()) {
+      Set<Sample> store = new HashSet<>();
+
+      for (Sample sample : samples) {
+        sample = getSampleWithParentsAndChildren(sample.getIdentifier().toString());
+
+        if (!sample.getType().getCode().equals("Q_BIOLOGICAL_ENTITY")) {
+          store.addAll(sample.getParents());
+
+          if (sample.getType().getCode().equals("Q_BIOLOGICAL_SAMPLE"))
+            isCellLine = sample.getProperties().get("Q_PRIMARY_TISSUE").equals("CELL_LINE");
+
+        } else
+          roots.add(sample);
+      }
+      samples = new ArrayList<>(store);
+    }
+
+    for (Sample sample : roots) {
+      String id       = sample.getCode();
+      String organism = sample.getProperties().get("Q_NCBI_ORGANISM");
+
+      try {
+        id = id.split("-")[1];
+      } catch (ArrayIndexOutOfBoundsException e) { }
+
+      if (organism != null) {
+        String desc = "";
+        for (VocabularyTerm term : taxTerms) {
+          if (organism.equals(term.getCode()))
+            desc = term.getLabel();
+        }
+
+        if (isCellLine)
+          desc += " Cell Line";
+        else if (desc.toLowerCase().equals("homo sapiens"))
+          desc = "Patient";
+        res.add(desc + ' ' + id);
+
+      } else
+        res.add("unknown source");
+    }
+
+    String[] resArr = new String[res.size()];
+    resArr = res.toArray(resArr);
+
+    return StringUtils.join(resArr, "+");
+  }
+
+  /**
+   * For a list of openBIS Samples returns all ancestor samples of a specific sample type.
+   * @param samples Set of openBIS Samples
+   * @param sampleTypeCode Code of the openBIS SampleType by which the ancestors should be filtered
+   * @return Filtered set of all ancestor samples of a specific type
+   */
+  private Set<Sample> fetchAncestorsOfType(List<Sample> samples, String sampleTypeCode) {
+    Set<Sample> targets = new HashSet<>();
+
+    while (!samples.isEmpty()) {
+      Set<Sample> store = new HashSet<>();
+
+      for (Sample sample : samples) {
+        sample = getSampleWithParentsAndChildren(sample.getIdentifier().toString());
+
+        if (!sample.getType().getCode().equals(sampleTypeCode)) {
+          store.addAll(sample.getParents());
+
+        } else
+          targets.add(sample);
+      }
+      samples = new ArrayList<>(store);
+    }
+
+    return targets;
+  }
+
+  /**
+   * Returns a string containing a specific property of multiple samples, separated by commas.
+   * @param samples Set of openBIS samples
+   * @param property Name of the openBIS property
+   * @return String of comma-separated property for all input samples
+   */
+  private String getPropertyOfSamples(Set<Sample> samples, String property) {
+    List<String> resL = new ArrayList<>();
+
+    for (Sample s : samples) {
+      resL.add(s.getProperties().get(property));
+    }
+
+    return StringUtils.join(resL, ", ");
+  }
+
+
+  /* ------------------------------------------------------------------------------------ */
   /* ----- Misc ------------------------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
   @Override
@@ -3107,19 +3279,6 @@ public class OpenBisClient implements IOpenBisClient {
     }
 
     return parentMap;
-  }
-
-  /**
-   * Returns lines of a spreadsheet of humanly readable information of the samples in a project.
-   * Only one requested layer of the data model is returned. Experimental factors are returned in
-   * the properties xml format and should be parsed before the spreadsheet is presented to the user.
-   *
-   * @param projectCode The 5 letter QBiC code of the project
-   * @param sampleType The openBIS sampleType that should be included in the result
-   */
-  @Override
-  public List<String> getProjectTSV(String projectCode, String sampleType) {
-    return null;
   }
 
   @Override
