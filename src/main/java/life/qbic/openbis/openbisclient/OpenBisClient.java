@@ -75,9 +75,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.text.WordUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import static life.qbic.openbis.openbisclient.helper.OpenBisClientHelper.*;
 
 /**
  * The type Open bis client.
@@ -1200,7 +1198,7 @@ public class OpenBisClient implements IOpenBisClient {
 
 
   /* ------------------------------------------------------------------------------------ */
-  /* ----- DataSets --------------------------------------------------------------------- */
+  /* ----- DataSet ---------------------------------------------------------------------- */
   /* ------------------------------------------------------------------------------------ */
   /**
    * Get all datasets which are registered in the openBIS instance.
@@ -3210,28 +3208,4 @@ public class OpenBisClient implements IOpenBisClient {
   public URL getUrlForDataset(String datasetCode, String datasetName) throws MalformedURLException {
     return getDataStoreDownloadURL(datasetCode, datasetName);
   }
-
-  /**
-   * Retrieve inputstream for dataset
-   *
-   * @param datasetCode Code of dataset
-   * @return input stream for dataset
-   */
-  @Override
-  public InputStream getDatasetStream(String datasetCode) {
-    return null;
-  }
-
-  /**
-   * Retrieve inputstream for dataset in folder
-   *
-   * @param datasetCode Code of dataset
-   * @param folder Folder of dataset
-   * @return input stream of datasets
-   */
-  @Override
-  public InputStream getDatasetStream(String datasetCode, String folder) {
-    return null;
-  }
-
 }
