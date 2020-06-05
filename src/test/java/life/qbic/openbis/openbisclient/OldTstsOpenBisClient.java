@@ -269,18 +269,14 @@ public class OldTstsOpenBisClient {
 
   @Test
   public void testGetSamplesWithParentsAndChildren() {
-    List<Sample> samples = openbisClient.getSamplesWithParentsAndChildren("MSQMUSP061A9");
-    assertThat(samples.size()).isAtLeast(1);
-    assertSampleCompletetlyFetched(samples.get(0));
+    Sample sample = openbisClient.getSamplesWithParentsAndChildren("MSQMUSP061A9");
+    assertSampleCompletetlyFetched(sample);
   }
 
   @Test
   public void testGetSamplesWithParentsAndChildrenWithIdentifier() {
-    List<Sample> samples = openbisClient.getSamplesWithParentsAndChildren(
-        "/MFT_PICHLER_MULTISCALE" +
-            "/MSQMUSP061A9");
-    assertThat(samples.size()).isAtLeast(1);
-    assertSampleCompletetlyFetched(samples.get(0));
+    Sample sample = openbisClient.getSamplesWithParentsAndChildren("/MFT_PICHLER_MULTISCALE/MSQMUSP061A9");
+    assertSampleCompletetlyFetched(sample);
   }
 
   @Test
