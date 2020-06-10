@@ -3,6 +3,8 @@ package life.qbic.openbis.openbisclient.helper;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.fetchoptions.DataSetFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.fetchoptions.ExperimentFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.fetchoptions.ExperimentTypeFetchOptions;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.material.fetchoptions.MaterialFetchOptions;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.material.fetchoptions.MaterialTypeFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.person.fetchoptions.PersonFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.fetchoptions.ProjectFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.fetchoptions.PropertyAssignmentFetchOptions;
@@ -200,7 +202,6 @@ public class OpenBisClientHelper {
     dataSetFetchOptions.withChildren();
     dataSetFetchOptions.withPhysicalData();
 
-
     return dataSetFetchOptions;
   }
 
@@ -260,5 +261,29 @@ public class OpenBisClientHelper {
     propertyAssignmentFetchOptions.withPropertyTypeUsing(fetchPropertyTypeCompletely());
 
     return propertyAssignmentFetchOptions;
+  }
+
+
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Material / MaterialType ------------------------------------------------------ */
+  /* ------------------------------------------------------------------------------------ */
+  public static MaterialFetchOptions fetchMaterialCompletely() {
+    MaterialFetchOptions materialFetchOptions = new MaterialFetchOptions();
+    materialFetchOptions.withRegistrator();
+    materialFetchOptions.withHistory();
+    materialFetchOptions.withProperties();
+    materialFetchOptions.withMaterialProperties();
+    materialFetchOptions.withTags();
+    materialFetchOptions.withType();
+
+    return materialFetchOptions;
+  }
+
+  public static MaterialTypeFetchOptions fetchMaterialTypeCompletely() {
+    MaterialTypeFetchOptions materialTypeFetchOptions = new MaterialTypeFetchOptions();
+    materialTypeFetchOptions.withPropertyAssignments();
+    materialTypeFetchOptions.withValidationPlugin();
+
+    return materialTypeFetchOptions;
   }
 }

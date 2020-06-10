@@ -16,6 +16,10 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.id.ExperimentIdentifi
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.id.ExperimentPermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.search.ExperimentSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.search.ExperimentTypeSearchCriteria;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.material.Material;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.material.MaterialType;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.material.search.MaterialSearchCriteria;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.material.search.MaterialTypeSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.person.Person;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.person.search.PersonSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.Project;
@@ -1951,6 +1955,134 @@ public class OpenBisClient implements IOpenBisClient {
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch vocabulary terms. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn(String.format("getCVLabelForProperty(%s, \"%s\") returned null.", propertyType, vocabularyTermCode));
+      return null;
+    }
+  }
+
+
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Material / MaterialType ------------------------------------------------------ */
+  /* ------------------------------------------------------------------------------------ */
+  /**
+   * Get all materials which are registered in the openBIS instance.
+   * @return List of openBIS v3 Material
+   */
+  public List<Material> listMaterials() {
+    ensureLoggedIn();
+
+    try {
+      SearchResult<Material> materials =
+              v3.searchMaterials(sessionToken, new MaterialSearchCriteria(), fetchMaterialCompletely());
+
+      if (materials.getTotalCount() == 0)
+        logger.info("No materials found with getMaterial().");
+
+      return materials.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch materials. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn("getMaterial() returned null.");
+      return null;
+    }
+  }
+
+  /**
+   * Get all materials of the provided material type.
+   * @param typeCode Code of the openBIS material type
+   * @return List of openBIS v3 Material
+   */
+  public List<Material> getMaterialsByType(String typeCode) {
+    ensureLoggedIn();
+
+    try {
+      MaterialSearchCriteria msc = new MaterialSearchCriteria();
+      msc.withType().withCode().thatEquals(typeCode);
+
+      SearchResult<Material> materials =
+              v3.searchMaterials(sessionToken, msc, fetchMaterialCompletely());
+
+      if (materials.getTotalCount() == 0)
+        logger.info(String.format("No materials found with getMaterialsByType(\"%s\").", typeCode));
+
+      return materials.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch materials. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getMaterialsByType(\"%s\") returned null.", typeCode));
+      return null;
+    }
+  }
+
+  /**
+   * Get all materials from the openBIS instance which fit the predefined search criteria.
+   * @param materialSearchCriteria Criteria to filter material search results
+   * @return List of openBIS v3 Material
+   */
+  public Material getMaterial(MaterialSearchCriteria materialSearchCriteria) {
+    ensureLoggedIn();
+
+    try {
+      SearchResult<Material> materials =
+              v3.searchMaterials(sessionToken, materialSearchCriteria, fetchMaterialCompletely());
+
+      if (materials.getTotalCount() == 0)
+        logger.info(String.format("No materials found with getMaterial(%s).", materialSearchCriteria));
+
+      return materials.getObjects().isEmpty() ? null : materials.getObjects().get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch materials. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getMaterial(%s) returned null.", materialSearchCriteria));
+      return null;
+    }
+  }
+
+  /**
+   * Get material of the provided material code.
+   * @param materialCode Code of the openBIS vocabulary
+   * @return openBIS v3 Material
+   */
+  public Material getMaterial(String materialCode) {
+    ensureLoggedIn();
+
+    try {
+      MaterialSearchCriteria msc = new MaterialSearchCriteria();
+      msc.withCode().thatEquals(materialCode);
+
+      SearchResult<Material> materials =
+              v3.searchMaterials(sessionToken, msc, fetchMaterialCompletely());
+
+      if (materials.getTotalCount() == 0)
+        logger.info(String.format("No materials found with getMaterial(\"%s\").", materialCode));
+
+      return materials.getObjects().isEmpty() ? null : materials.getObjects().get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch materials. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getMaterial(\"%s\") returned null.", materialCode));
+      return null;
+    }
+  }
+
+  /**
+   * Get all material types which are registered in the openBIS instance.
+   * @return List of openBIS v3 MaterialType
+   */
+  public List<MaterialType> listMaterialTypes() {
+    ensureLoggedIn();
+
+    try {
+      SearchResult<MaterialType> materialTypes =
+              v3.searchMaterialTypes(sessionToken, new MaterialTypeSearchCriteria(), fetchMaterialTypeCompletely());
+
+      if (materialTypes.getTotalCount() == 0)
+        logger.info("No material types found with listMaterialTypes().");
+
+      return materialTypes.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch material types. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn("listMaterialTypes() returned null.");
       return null;
     }
   }
