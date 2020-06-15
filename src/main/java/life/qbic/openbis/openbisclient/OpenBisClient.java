@@ -1123,6 +1123,33 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
+   * Get samples with its parents and children objects also fetched entirely.
+   * @param sampleCodes List of codes of the openBIS samples
+   * @return List of openBIS v3 Sample
+   */
+  public List<Sample> getSamplesWithParentsAndChildren(List<String> sampleCodes) {
+    ensureLoggedIn();
+
+    try {
+      SampleSearchCriteria ssc = new SampleSearchCriteria();
+      ssc.withCodes().thatIn(sampleCodes);
+
+      SearchResult<Sample> samples =
+              v3.searchSamples(sessionToken, ssc, fetchSamplesWithParentsAndChildrenCompletely());
+
+      if (samples.getTotalCount() == 0)
+        logger.info(String.format("No samples found with getSamplesWithParentsAndChildren(%s).", sampleCodes));
+
+      return samples.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getSamplesWithParentsAndChildren(%s) returned null.", sampleCodes));
+      return null;
+    }
+  }
+
+  /**
    * Get all samples of the provided sample type.
    * @param typeCode Code of the openBIS sample type
    * @return List of openBIS v3 Sample
