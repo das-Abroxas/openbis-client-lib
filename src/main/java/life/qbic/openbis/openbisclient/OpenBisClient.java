@@ -1538,6 +1538,32 @@ public class OpenBisClient implements IOpenBisClient {
     }
   }
 
+  /**
+   * Get dataset of the provided dataset code.
+   * @param datasetCode Code of the openBIS dataset
+   * @return openBIS V3 DataSet
+   */
+  public DataSet getDataSet(String datasetCode) {
+    ensureLoggedIn();
+
+    try {
+      DataSetSearchCriteria dssc = new DataSetSearchCriteria();
+      dssc.withCode().thatEquals(datasetCode);
+
+      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, dssc, fetchDataSetsCompletely());
+
+      if (datasets.getTotalCount() == 0)
+        logger.info(String.format("No datasets found with getDataSet(\"%s\").", datasetCode));
+
+      return datasets.getObjects().isEmpty() ? null : datasets.getObjects().get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch datasets. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getDataSet(\"%s\") returned null.", datasetCode));
+      return null;
+    }
+  }
+
 
   /* ------------------------------------------------------------------------------------ */
   /* ----- DataSetFile / Download Streams ----------------------------------------------- */
