@@ -1991,24 +1991,35 @@ public class OpenBisClient implements IOpenBisClient {
 
   /**
    * Get the label of a vocabulary term for the provided vocabulary term code.
-   * @param propertyType openBIS v3 PropertyType (not used...)
+   * The vocabulary term has to be in the vocabulary which is connected to the provided property type.
+   * @param propertyType openBIS v3 PropertyType
    * @param vocabularyTermCode Code of openBIS VocabularyTerm
-   * @return Label of vocabulary term
+   * @return Label of openBIS VocabularyTerm
    */
   @Override
   public String getCVLabelForProperty(PropertyType propertyType, String vocabularyTermCode) {
     ensureLoggedIn();
 
     try {
-      VocabularyTermSearchCriteria vtsc = new VocabularyTermSearchCriteria();
-      vtsc.withCode().thatEquals(vocabularyTermCode);
+      VocabularySearchCriteria vsc = new VocabularySearchCriteria();
+      vsc.withCode().thatEquals( propertyType.getVocabulary().getCode() );
 
-      SearchResult<VocabularyTerm> vocabularyTerms = v3.searchVocabularyTerms(sessionToken, vtsc, new VocabularyTermFetchOptions());
+      SearchResult<Vocabulary> vocabulary =
+              v3.searchVocabularies(sessionToken, vsc, fetchVocabularyCompletely());
 
-      if (vocabularyTerms.getTotalCount() == 0)
-        logger.info(String.format("No vocabulary terms found with getCVLabelForProperty(\"%s\").", vocabularyTermCode));
+      if (vocabulary.getTotalCount() == 0)
+        logger.info(String.format("No vocabulary found with getCVLabelForProperty(%s, \"%s\").", propertyType, vocabularyTermCode));
 
-      return vocabularyTerms.getObjects().isEmpty() ? null : vocabularyTerms.getObjects().get(0).getLabel();
+      for (VocabularyTerm vt : vocabulary.getObjects().get(0).getTerms()) {
+        if (vocabularyTermCode.equals(vt.getCode()))
+          return vt.getLabel();
+      }
+      return null;
+
+    } catch (NotFetchedException nfe) {
+      logger.error("PropertyType has no fetched vocabulary.");
+      logger.warn(String.format("getCVLabelForProperty(%s, \"%s\") returned null.", propertyType, vocabularyTermCode));
+      return null;
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch vocabulary terms. Currently logged in user has sufficient permissions in openBIS?");
