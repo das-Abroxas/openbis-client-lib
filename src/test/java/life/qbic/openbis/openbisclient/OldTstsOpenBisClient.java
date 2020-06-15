@@ -269,13 +269,13 @@ public class OldTstsOpenBisClient {
 
   @Test
   public void testGetSamplesWithParentsAndChildren() {
-    Sample samples = openbisClient.getSamplesWithParentsAndChildren("MSQMUSP061A9");
+    Sample samples = openbisClient.getSampleWithParentsAndChildren("MSQMUSP061A9");
     assertSampleCompletetlyFetched(samples);
   }
 
   @Test
   public void testGetSamplesWithParentsAndChildrenWithIdentifier() {
-    Sample samples = openbisClient.getSamplesWithParentsAndChildren(
+    Sample samples = openbisClient.getSampleWithParentsAndChildren(
         "/MFT_PICHLER_MULTISCALE/MSQMUSP061A9");
     assertSampleCompletetlyFetched(samples);
   }
@@ -284,20 +284,20 @@ public class OldTstsOpenBisClient {
   public void testGetSamplesWithParentsAndChildrenNull() {
     exception.expect(RuntimeException.class);
     exception.expectMessage("NullPointer");
-    openbisClient.getSamplesWithParentsAndChildren(null);
+    openbisClient.getSampleWithParentsAndChildren(null);
   }
 
   @Test
   public void testGetSamplesWithParentsAndChildrenEmpty() {
     exception.expect(UserFailureException.class);
     exception.expectMessage("invalid");
-    openbisClient.getSamplesWithParentsAndChildren("");
+    openbisClient.getSampleWithParentsAndChildren("");
   }
 
   @Test
   public void testGetSamplesWithParentsAndChildrenNotExist() {
     //TODO should raise an error instead returning empty list
-    openbisClient.getSamplesWithParentsAndChildren("/does/not/exist");
+    openbisClient.getSampleWithParentsAndChildren("/does/not/exist");
   }
 
   @Test

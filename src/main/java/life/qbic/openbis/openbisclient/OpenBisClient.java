@@ -1089,30 +1089,35 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Get samples with its parents and children objects also fetched entirely.
-   * @param sampleCode Code of the openBIS sample
-   * @return List of openBIS v3 Sample
+   * Get sample with its parents and children objects also fetched entirely.
+   * @param sampleCodeOrIdentifier Code or identifier of the openBIS sample
+   * @return openBIS v3 Sample
    */
   @Override
-  public Sample getSampleWithParentsAndChildren(String sampleCode) {
+  public Sample getSampleWithParentsAndChildren(String sampleCodeOrIdentifier) {
     // Note: Up until version 1.4.0 this method was used to get all sample objects of a project directly included in a list.
-    //       That means you should replace this method e.g. in the projectwizard-portlet with getSamplesOfProject(String)
+    //       That means you should replace this method, e.g. in the projectwizard-portlet, with getSamplesOfProject(String)
     ensureLoggedIn();
 
     try {
       SampleSearchCriteria ssc = new SampleSearchCriteria();
-      ssc.withCode().thatEquals(sampleCode);
 
-      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesWithParentsAndChildrenCompletely());
+      if (sampleCodeOrIdentifier.startsWith("/"))
+        ssc.withIdentifier().thatEquals(sampleCodeOrIdentifier);
+      else
+        ssc.withCode().thatEquals(sampleCodeOrIdentifier);
+
+      SearchResult<Sample> samples =
+              v3.searchSamples(sessionToken, ssc, fetchSamplesWithParentsAndChildrenCompletely());
 
       if (samples.getTotalCount() == 0)
-        logger.info(String.format("No samples found with getSamplesWithParentsAndChildren(\"%s\").", sampleCode));
+        logger.info(String.format("No samples found with getSamplesWithParentsAndChildren(\"%s\").", sampleCodeOrIdentifier));
 
       return samples.getObjects().isEmpty() ? null : samples.getObjects().get(0);
 
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
-      logger.warn(String.format("getSamplesWithParentsAndChildren(\"%s\") returned null.", sampleCode));
+      logger.warn(String.format("getSamplesWithParentsAndChildren(\"%s\") returned null.", sampleCodeOrIdentifier));
       return null;
     }
   }
