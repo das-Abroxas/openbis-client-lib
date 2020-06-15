@@ -53,7 +53,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.id.SpacePermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.search.SpaceSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.Vocabulary;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.VocabularyTerm;
-import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.fetchoptions.VocabularyTermFetchOptions;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.id.VocabularyTermPermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.search.VocabularySearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.search.VocabularyTermSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.exceptions.NotFetchedException;
@@ -2024,6 +2024,68 @@ public class OpenBisClient implements IOpenBisClient {
     } catch (UserFailureException ufe) {
       logger.error("Could not fetch vocabulary terms. Currently logged in user has sufficient permissions in openBIS?");
       logger.warn(String.format("getCVLabelForProperty(%s, \"%s\") returned null.", propertyType, vocabularyTermCode));
+      return null;
+    }
+  }
+
+  /**
+   * Get the vocabulary term for the provided vocabulary term code.<br />
+   * Returns the first search result regardless if the vocabulary term also exists in another vocabulary.
+   * @param vocabularyTermCode Code of openBIS VocabularyTerm
+   * @return openBIS V3 VocabularyTerm
+   *
+   */
+  public VocabularyTerm getVocabularyTerm(String vocabularyTermCode) {
+    //Note: Arbitrarily does not fetch the label and description of the VocabularyTerm
+    //      e.g. the VocabularyTerm 'DNA' or 'RNA' in the Vocabulary 'Q_SAMPLE_TYPES'.
+    ensureLoggedIn();
+
+    try {
+      VocabularyTermSearchCriteria vtsc = new VocabularyTermSearchCriteria();
+      vtsc.withCode().thatEquals(vocabularyTermCode);
+
+      SearchResult<VocabularyTerm> vocabularyTerms =
+              v3.searchVocabularyTerms(sessionToken, vtsc, fetchVocabularyTermCompletely());
+
+      if (vocabularyTerms.getTotalCount() == 0)
+        logger.info(String.format("No vocabulary terms found with getVocabularyTerm(\"%s\").", vocabularyTermCode));
+
+      return vocabularyTerms.getObjects().isEmpty() ? null : vocabularyTerms.getObjects().get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch vocabulary terms. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getVocabularyTerm(\"%s\") returned null.", vocabularyTermCode));
+      return null;
+    }
+  }
+
+  /**
+   * Get the vocabulary term of the provided vocabulary term code from the specified vocabulary.
+   * @param vocabulary Code of vocabulary that contains the vocabulary term
+   * @param vocabularyTermCode Code of openBIS VocabularyTerm
+   * @return openBIS V3 VocabularyTerm
+   *
+   */
+  public VocabularyTerm getVocabularyTerm(String vocabulary, String vocabularyTermCode) {
+    //Note: Arbitrarily does not fetch the label and description of the VocabularyTerm
+    //      e.g. the VocabularyTerm 'DNA' or 'RNA' in the Vocabulary 'Q_SAMPLE_TYPES'.
+    ensureLoggedIn();
+
+    try {
+      VocabularyTermSearchCriteria vtsc = new VocabularyTermSearchCriteria();
+      vtsc.withId().thatEquals( new VocabularyTermPermId(vocabularyTermCode, vocabulary) );
+
+      SearchResult<VocabularyTerm> vocabularyTerms =
+              v3.searchVocabularyTerms(sessionToken, vtsc, fetchVocabularyTermCompletely());
+
+      if (vocabularyTerms.getTotalCount() == 0)
+        logger.info(String.format("No vocabulary terms found with getVocabularyTerm(\"%s\").", vocabularyTermCode));
+
+      return vocabularyTerms.getObjects().isEmpty() ? null : vocabularyTerms.getObjects().get(0);
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch vocabulary terms. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getVocabularyTerm(\"%s\") returned null.", vocabularyTermCode));
       return null;
     }
   }
