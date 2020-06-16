@@ -442,6 +442,59 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
+   * Get all projects from the openBIS instance which fit the predefined search criteria.
+   * @param projectSearchCriteria Criteria to filter project search results
+   * @return List of openBIS v3 Project
+   */
+  public List<Project> getProjects(ProjectSearchCriteria projectSearchCriteria) {
+    ensureLoggedIn();
+
+    try {
+      SearchResult<Project> projects =
+              v3.searchProjects(sessionToken, projectSearchCriteria, fetchProjectsCompletely());
+
+      if (projects.getTotalCount() == 0)
+        logger.info(String.format("No projects found with getProjects(%s).", projectSearchCriteria));
+
+      return projects.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch projects. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getProjects(%s) returned null.", projectSearchCriteria));
+      return null;
+    }
+  }
+
+  /**
+   * Get all projects from the openBIS instance which fit the predefined search criteria
+   *   and are available for the specified openBIS user.
+   * @param projectSearchCriteria Criteria to filter project search results
+   * @return List of openBIS v3 Project
+   */
+  public List<Project> getProjects(ProjectSearchCriteria projectSearchCriteria, String user) {
+    ensureLoggedIn(user);
+
+    try {
+      SearchResult<Project> projects =
+              v3.searchProjects(sessionToken, projectSearchCriteria, fetchProjectsCompletely());
+
+      if (projects.getTotalCount() == 0)
+        logger.info(String.format("No projects found with getProjects(%s, \"%s\").", projectSearchCriteria, user));
+
+      return projects.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch projects. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getProjects(%s, \"%s\") returned null.", projectSearchCriteria, user));
+      return null;
+    } catch (IllegalArgumentException iae) {
+      logger.error(String.format("Could not fetch experiments of user %s. Does this user exist in openBIS?", user));
+      logger.warn(String.format("getProjects(%s, \"%s\") returned null.", projectSearchCriteria, user));
+      return null;
+    }
+  }
+
+  /**
    * Get all projects registered under the provided Space code.
    * @param spaceCode Code of the openBIS space
    * @return List of openBIS v3 Project
@@ -654,6 +707,59 @@ public class OpenBisClient implements IOpenBisClient {
       return null;
     } else {
       return experiments.getObjects();
+    }
+  }
+
+  /**
+   * Get all experiments from the openBIS instance which fit the predefined search criteria.
+   * @param experimentSearchCriteria Criteria to filter experiment search results
+   * @return List of openBIS v3 Experiment
+   */
+  public List<Experiment> getExperiments(ExperimentSearchCriteria experimentSearchCriteria) {
+    ensureLoggedIn();
+
+    try {
+      SearchResult<Experiment> experiments =
+              v3.searchExperiments(sessionToken, experimentSearchCriteria, fetchExperimentsCompletely());
+
+      if (experiments.getTotalCount() == 0)
+        logger.info(String.format("No experiments found with getExperiments(%s).", experimentSearchCriteria));
+
+      return experiments.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch experiments. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getExperiments(%s) returned null.", experimentSearchCriteria));
+      return null;
+    }
+  }
+
+  /**
+   * Get all experiments from the openBIS instance which fit the predefined search criteria
+   *   and are available for the specified openBIS user.
+   * @param experimentSearchCriteria Criteria to filter experiment search results
+   * @return List of openBIS v3 Experiment
+   */
+  public List<Experiment> getExperimentsForUser(ExperimentSearchCriteria experimentSearchCriteria, String user) {
+    ensureLoggedIn(user);
+
+    try {
+      SearchResult<Experiment> experiments =
+              v3.searchExperiments(sessionToken, experimentSearchCriteria, fetchExperimentsCompletely());
+
+      if (experiments.getTotalCount() == 0)
+        logger.info(String.format("No experiments found with getExperiments(%s, \"%s\").", experimentSearchCriteria, user));
+
+      return experiments.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch experiments. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getExperiments(%s, \"%s\") returned null.", experimentSearchCriteria, user));
+      return null;
+    } catch (IllegalArgumentException iae) {
+      logger.error(String.format("Could not fetch experiments of user %s. Does this user exist in openBIS?", user));
+      logger.warn(String.format("getExperiments(%s, \"%s\") returned null.", experimentSearchCriteria, user));
+      return null;
     }
   }
 
@@ -931,6 +1037,56 @@ public class OpenBisClient implements IOpenBisClient {
     } catch (IllegalArgumentException iae) {
       logger.error(String.format("Could not fetch samples of user %s. Does this user exist in openBIS?", user));
       logger.warn(String.format("listSamplesForUser(\"%s\") returned null.", user));
+      return null;
+    }
+  }
+
+  /**
+   * Get all samples from the openBIS instance which fit the predefined search criteria.
+   * @param sampleSearchCriteria Criteria to filter sample search results
+   * @return List of openBIS v3 Sample
+   */
+  public List<Sample> getSamples(SampleSearchCriteria sampleSearchCriteria) {
+    ensureLoggedIn();
+
+    try {
+      SearchResult<Sample> samples = v3.searchSamples(sessionToken, sampleSearchCriteria, fetchSamplesCompletely());
+
+      if (samples.getTotalCount() == 0)
+        logger.info(String.format("No samples found with getSamples(%s).", sampleSearchCriteria));
+
+      return samples.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getSamples(%s) returned null.", sampleSearchCriteria));
+      return null;
+    }
+  }
+
+  /**
+   * Get all samples from the openBIS instance which fit the predefined search criteria.
+   * @param sampleSearchCriteria Criteria to filter sample search results
+   * @return List of openBIS v3 Sample
+   */
+  public List<Sample> getSamplesForUser(SampleSearchCriteria sampleSearchCriteria, String user) {
+    ensureLoggedIn(user);
+
+    try {
+      SearchResult<Sample> samples = v3.searchSamples(sessionToken, sampleSearchCriteria, fetchSamplesCompletely());
+
+      if (samples.getTotalCount() == 0)
+        logger.info(String.format("No samples found with getSamplesForUser(%s, \"%s\").", sampleSearchCriteria, user));
+
+      return samples.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getSamplesForUser(%s, \"%s\") returned null.", sampleSearchCriteria, user));
+      return null;
+    } catch (IllegalArgumentException iae) {
+      logger.error(String.format("Could not fetch samples of user %s. Does this user exist in openBIS?", user));
+      logger.warn(String.format("getSamplesForUser(%s, \"%s\") returned null.", sampleSearchCriteria, user));
       return null;
     }
   }
