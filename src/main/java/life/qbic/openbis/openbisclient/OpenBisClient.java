@@ -1092,6 +1092,32 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
+   * Get all samples from the openBIS instance which match the provided sample codes.
+   * @param sampleCodes List of openBIS sample codes
+   * @return List of openBIS v3 Sample
+   */
+  public List<Sample> getSamples(List<String> sampleCodes) {
+    ensureLoggedIn();
+
+    try {
+      SampleSearchCriteria ssc = new SampleSearchCriteria();
+      ssc.withCodes().thatIn(sampleCodes);
+
+      SearchResult<Sample> samples = v3.searchSamples(sessionToken, ssc, fetchSamplesCompletely());
+
+      if (samples.getTotalCount() == 0)
+        logger.info(String.format("No samples found with getSamples(%s).", sampleCodes));
+
+      return samples.getObjects();
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not fetch samples. Currently logged in user has sufficient permissions in openBIS?");
+      logger.warn(String.format("getSamples(%s) returned null.", sampleCodes));
+      return null;
+    }
+  }
+
+  /**
    * Get all samples registered under the provided space code.
    * @param spaceCode Code of the openBIS space
    * @return List of openBIS v3 Sample
