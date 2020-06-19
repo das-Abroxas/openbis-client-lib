@@ -1517,7 +1517,8 @@ public class OpenBisClient implements IOpenBisClient {
       DataSetSearchCriteria dssc = new DataSetSearchCriteria();
       dssc.withSample().withProject().withCodes().thatIn( projects.stream().map(Project::getCode).collect(Collectors.toList()) );
 
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      SearchResult<DataSet> datasets =
+              v3.searchDataSets(sessionToken, dssc, fetchDataSetsCompletely());
 
       if (datasets.getTotalCount() == 0)
         logger.info(String.format("No datasets found with getDataSetsOfProjects(\"%s\").", projects));
@@ -1533,20 +1534,23 @@ public class OpenBisClient implements IOpenBisClient {
 
   /**
    * Get all datasets registered under the provided project code or identifier.
-   * @param projectCodeIdentifier Code or identifier of the openBIS project
+   * @param projectCodeOrIdentifier Code or identifier of the openBIS project
    * @return List of openBIS v3 DataSet
    */
   @Override
-  public List<DataSet> getDataSetsOfProject(String projectCodeIdentifier) {
+  public List<DataSet> getDataSetsOfProject(String projectCodeOrIdentifier) {
     ensureLoggedIn();
 
     try {
       DataSetSearchCriteria dssc = new DataSetSearchCriteria();
-      dssc.withOrOperator();
-      dssc.withSample().withProject().withCode().thatEquals(projectCodeIdentifier);
-      dssc.withSample().withProject().withId().thatEquals( new ProjectIdentifier(projectCodeIdentifier) );
 
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      if (projectCodeOrIdentifier.startsWith("/"))
+        dssc.withSample().withProject().withId().thatEquals( new ProjectIdentifier(projectCodeOrIdentifier) );
+      else
+        dssc.withSample().withProject().withCode().thatEquals(projectCodeOrIdentifier);
+
+      SearchResult<DataSet> datasets =
+              v3.searchDataSets(sessionToken, dssc, fetchDataSetsCompletely());
 
       if (datasets.getTotalCount() == 0)
         logger.info(String.format("No datasets found with getDataSetsOfProject(\"%s\").", projectCodeIdentifier));
@@ -1573,7 +1577,8 @@ public class OpenBisClient implements IOpenBisClient {
       DataSetSearchCriteria dssc = new DataSetSearchCriteria();
       dssc.withExperiment().withCodes().thatIn( experimentCodes );
 
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      SearchResult<DataSet> datasets =
+              v3.searchDataSets(sessionToken, dssc, fetchDataSetsCompletely());
 
       if (datasets.getTotalCount() == 0)
         logger.info(String.format("No datasets found with listDataSetsForExperiments(\"%s\").", experimentCodes));
@@ -1654,7 +1659,8 @@ public class OpenBisClient implements IOpenBisClient {
       DataSetSearchCriteria dssc = new DataSetSearchCriteria();
       dssc.withSample().withCodes().thatIn( sampleCodes );
 
-      SearchResult<DataSet> datasets = v3.searchDataSets(sessionToken, new DataSetSearchCriteria(), fetchDataSetsCompletely());
+      SearchResult<DataSet> datasets =
+              v3.searchDataSets(sessionToken, dssc, fetchDataSetsCompletely());
 
       if (datasets.getTotalCount() == 0)
         logger.info(String.format("No datasets found with listDataSetsForSamples(\"%s\").", sampleCodes));
