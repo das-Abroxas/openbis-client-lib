@@ -7,6 +7,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search.SearchResult;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.DataSet;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.id.DataSetPermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.search.DataSetSearchCriteria;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.dataset.update.DataSetUpdate;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.entitytype.id.EntityTypePermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.Experiment;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.ExperimentType;
@@ -16,6 +17,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.id.ExperimentIdentifi
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.id.ExperimentPermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.search.ExperimentSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.search.ExperimentTypeSearchCriteria;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.experiment.update.ExperimentUpdate;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.material.Material;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.material.MaterialType;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.material.search.MaterialSearchCriteria;
@@ -28,6 +30,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.fetchoptions.ProjectFetc
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.id.ProjectIdentifier;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.id.ProjectPermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.search.ProjectSearchCriteria;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.project.update.ProjectUpdate;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.PropertyAssignment;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.PropertyType;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.property.search.PropertyAssignmentSearchCriteria;
@@ -44,6 +47,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.id.SampleIdentifier;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.id.SamplePermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleSearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleTypeSearchCriteria;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.update.SampleUpdate;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.service.CustomASServiceExecutionOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.service.id.CustomASServiceCode;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.Space;
@@ -51,11 +55,15 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.create.SpaceCreation;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.fetchoptions.SpaceFetchOptions;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.id.SpacePermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.search.SpaceSearchCriteria;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.space.update.SpaceUpdate;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.Vocabulary;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.VocabularyTerm;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.id.VocabularyPermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.id.VocabularyTermPermId;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.search.VocabularySearchCriteria;
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.search.VocabularyTermSearchCriteria;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.update.VocabularyTermUpdate;
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.vocabulary.update.VocabularyUpdate;
 import ch.ethz.sis.openbis.generic.asapi.v3.exceptions.NotFetchedException;
 import ch.ethz.sis.openbis.generic.dssapi.v3.IDataStoreServerApi;
 import ch.ethz.sis.openbis.generic.dssapi.v3.dto.datasetfile.DataSetFile;
@@ -66,8 +74,10 @@ import ch.ethz.sis.openbis.generic.dssapi.v3.dto.datasetfile.fetchoptions.DataSe
 import ch.ethz.sis.openbis.generic.dssapi.v3.dto.datasetfile.id.DataSetFilePermId;
 import ch.ethz.sis.openbis.generic.dssapi.v3.dto.datasetfile.id.IDataSetFileId;
 import ch.ethz.sis.openbis.generic.dssapi.v3.dto.datasetfile.search.DataSetFileSearchCriteria;
+
 import ch.systemsx.cisd.common.exceptions.UserFailureException;
 import ch.systemsx.cisd.common.spring.HttpInvokerUtils;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
 import org.apache.logging.log4j.LogManager;
@@ -3359,6 +3369,533 @@ public class OpenBisClient implements IOpenBisClient {
       logger.warn("createSamples(List<SampleCreation>) returned null.");
       return null;
     }
+  }
+
+
+  /* ------------------------------------------------------------------------------------ */
+  /* ----- Entity update ---------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------------------ */
+  /**
+   * Update the description of the openBIS Space identified by the provided space identifier.
+   * @param spaceIdentifier openBIS space identifier
+   * @param description New description to be set
+   * @return True if update is successful; false else
+   */
+  public boolean updateSpace(String spaceIdentifier, String description) {
+    ensureLoggedIn();
+
+    try {
+      SpaceUpdate su = new SpaceUpdate();
+      su.setSpaceId( new SpacePermId(spaceIdentifier) );
+      su.setDescription( description );
+
+      v3.updateSpaces(sessionToken, Collections.singletonList(su));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("UserFailureException: " + ufe.getMessage() );
+    } catch (IllegalArgumentException iae) {
+      logger.error("IllegalArgumentException: " + iae.getMessage() );
+    }
+
+    logger.warn(String.format("updateSpace(\"%s\", \"%s\") failed.\n", spaceIdentifier, description));
+    return false;
+  }
+
+  /**
+   * Update the description of the openBIS Project identified by the provided project identifier.
+   * @param projectIdentifier openBIS project identifier
+   * @param description New description to be set
+   * @return True if update is successful; false else
+   */
+  public boolean updateProject(String projectIdentifier, String description) {
+    ensureLoggedIn();
+
+    try {
+      ProjectUpdate pu = new ProjectUpdate();
+      pu.setProjectId( new ProjectIdentifier(projectIdentifier) );
+      pu.setDescription( description );
+
+      v3.updateProjects(sessionToken, Collections.singletonList(pu));
+      return true;
+
+    } catch (UserFailureException ufe) {
+
+      logger.error("UserFailureException: " + ufe.getMessage() );
+    } catch (IllegalArgumentException iae) {
+      logger.error("IllegalArgumentException: " + iae.getMessage() );
+    }
+
+    logger.warn(String.format("updateProject(\"%s\", \"%s\") failed.\n", projectIdentifier, description));
+    return false;
+  }
+
+  /**
+   * Update the associated space of the openBIS Project
+   * identified by the provided project identifier.
+   *
+   * @param projectIdentifier openBIS project identifier
+   * @param spaceIdentifier New space under which the project will be registered
+   * @return True if update is successful; false else
+   */
+  public boolean updateProject(String projectIdentifier, SpacePermId spaceIdentifier) {
+    ensureLoggedIn();
+
+    try {
+      ProjectUpdate pu = new ProjectUpdate();
+      pu.setProjectId( new ProjectIdentifier(projectIdentifier) );
+      pu.setSpaceId( spaceIdentifier );
+
+      v3.updateProjects(sessionToken, Collections.singletonList(pu));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update project. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error(iae.getMessage());
+    }
+
+    logger.warn(String.format("updateProject(\"%s\", %s) failed.", projectIdentifier, spaceIdentifier));
+    return false;
+  }
+
+  /**
+   * Update the associated project of the openBIS Experiment
+   * identified by the provided experiment identifier.
+   *
+   * @param experimentIdentifier openBIS experiment identifier
+   * @param projectIdentifier Identifier of openBIS project under which the experiment will be registered
+   * @return True if update is successful; false else
+   */
+  public boolean updateExperiment(String experimentIdentifier, ProjectIdentifier projectIdentifier) {
+    ensureLoggedIn();
+
+    try {
+      ExperimentUpdate eu = new ExperimentUpdate();
+      eu.setExperimentId( new ExperimentIdentifier(experimentIdentifier) );
+      eu.setProjectId( projectIdentifier );
+
+      v3.updateExperiments(sessionToken, Collections.singletonList(eu));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update experiment. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error("Provided experiment identifier does not match the format specifications.");
+    }
+
+    logger.warn(String.format("updateExperiment(\"%s\", %s) failed.", experimentIdentifier, projectIdentifier));
+    return false;
+  }
+
+  /**
+   * Update the properties of the openBIS Experiment
+   * identified by the provided experiment identifier.
+   *
+   * @param experimentIdentifier openBIS experiment identifier
+   * @param properties Map with property name as key and property value as value
+   * @return True if update is successful; false else
+   */
+  public boolean updateExperiment(String experimentIdentifier, Map<String, String> properties) {
+    ensureLoggedIn();
+
+    try {
+      ExperimentUpdate eu = new ExperimentUpdate();
+      eu.setExperimentId( new ExperimentIdentifier(experimentIdentifier) );
+      eu.setProperties( properties );
+
+      v3.updateExperiments(sessionToken, Collections.singletonList(eu));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update experiment. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error("Provided experiment identifier does not match the format specifications.");
+    }
+
+    logger.warn(String.format("updateExperiment(\"%s\", %s) failed.", experimentIdentifier, properties));
+    return false;
+  }
+
+  /**
+   * Update a single property of the openBIS Experiment
+   * identified by the provided experiment identifier.
+   *
+   * @param experimentIdentifier openBIS experiment identifier
+   * @param propertyName Code of the property
+   * @param propertyValue New value of the property
+   * @return True if update is successful; false else
+   */
+  public boolean updateExperiment(String experimentIdentifier, String propertyName, String propertyValue) {
+    ensureLoggedIn();
+
+    try {
+      ExperimentUpdate eu = new ExperimentUpdate();
+      eu.setExperimentId( new ExperimentIdentifier(experimentIdentifier) );
+      eu.setProperty( propertyName, propertyValue );
+
+      v3.updateExperiments(sessionToken, Collections.singletonList(eu));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update experiment. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error("Provided experiment identifier does not match the format specifications.");
+    }
+
+    logger.warn(String.format("updateExperiment(\"%s\", \"%s\", \"%s\") failed.",
+            experimentIdentifier, propertyName, propertyValue));
+    return false;
+  }
+
+  /**
+   * Update the associated space of the openBIS Sample
+   * identified by the provided sample identifier.
+   *
+   * @param sampleIdentifier openBIS sample identifier
+   * @param spaceIdentifier New space under which the sample will be registered
+   * @return True if update is successful; false else
+   */
+  public boolean updateSample(String sampleIdentifier, SpacePermId spaceIdentifier) {
+    ensureLoggedIn();
+
+    try {
+      SampleUpdate su = new SampleUpdate();
+      su.setSampleId( new SampleIdentifier(sampleIdentifier) );
+      su.setSpaceId( spaceIdentifier );
+
+      v3.updateSamples(sessionToken, Collections.singletonList(su));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update sample. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error("Provided sample identifier does not match the format specifications.");
+    }
+
+    logger.warn(String.format("updateSample(\"%s\", %s) failed.", sampleIdentifier, spaceIdentifier));
+    return false;
+  }
+
+  /**
+   * Update the associated project of the openBIS Sample identified by the provided sample
+   * identifier. If the new project is registered under a different space, the space of the
+   * sample is updated as well.
+   *
+   * @param sampleIdentifier openBIS sample identifier
+   * @param projectIdentifier Identifier of openBIS project under which the sample will be registered
+   * @return True if update is successful; false else
+   */
+  public boolean updateSample(String sampleIdentifier, ProjectIdentifier projectIdentifier) {
+    ensureLoggedIn();
+
+    try {
+      SampleUpdate su = new SampleUpdate();
+      su.setSampleId( new SampleIdentifier(sampleIdentifier) );
+      su.setProjectId( projectIdentifier );
+
+      v3.updateSamples(sessionToken, Collections.singletonList(su));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update sample. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error("Provided sample identifier does not match the format specifications.");
+    }
+
+    logger.warn(String.format("updateSample(\"%s\", %s) failed.", sampleIdentifier, projectIdentifier));
+    return false;
+  }
+
+  /**
+   * Update the associated experiment of the openBIS Sample identified by the provided sample
+   * identifier. If the new experiment is registered under a different space and/or project,
+   * the space and/or project of the sample is updated as well.
+   *
+   * @param sampleIdentifier openBIS sample identifier
+   * @param experimentIdentifier Identifier of openBIS experiment under which the sample will be registered
+   * @return True if update is successful; false else
+   */
+  public boolean updateSample(String sampleIdentifier, ExperimentIdentifier experimentIdentifier) {
+    ensureLoggedIn();
+
+    try {
+      SampleUpdate su = new SampleUpdate();
+      su.setSampleId( new SampleIdentifier(sampleIdentifier) );
+      su.setExperimentId( experimentIdentifier );
+
+      v3.updateSamples(sessionToken, Collections.singletonList(su));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update sample. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error("Provided sample identifier does not match the format specifications.");
+    }
+
+    logger.warn(String.format("updateSample(\"%s\", %s) failed.", sampleIdentifier, experimentIdentifier));
+    return false;
+  }
+
+  /**
+   * Update the parent samples of the openBIS Sample identified by the provided sample
+   * identifier. The current parent samples will be replaced with the new ones.
+   *
+   * @param sampleIdentifier openBIS sample identifier
+   * @param parentIdentifier One or more new parent sample identifier
+   * @return True if update is successful; false else
+   */
+  public boolean updateSample(String sampleIdentifier, SampleIdentifier... parentIdentifier) {
+    ensureLoggedIn();
+
+    try {
+      SampleUpdate su = new SampleUpdate();
+      su.setSampleId( new SampleIdentifier(sampleIdentifier) );
+      su.getParentIds().set(parentIdentifier);
+
+      v3.updateSamples(sessionToken, Collections.singletonList(su));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update sample. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error("Provided sample identifier does not match the format specifications.");
+    }
+
+    logger.warn(String.format("updateSample(\"%s\", %s) failed.", sampleIdentifier, Arrays.asList(parentIdentifier)));
+    return false;
+  }
+
+  /**
+   * Update the properties of the openBIS Sample identified by the provided sample identifier.
+   *
+   * @param sampleIdentifier openBIS sample identifier
+   * @param properties Map with property name as key and property value as value
+   * @return True if update is successful; false else
+   */
+  public boolean updateSample(String sampleIdentifier, Map<String, String> properties) {
+    ensureLoggedIn();
+
+    try {
+      SampleUpdate su = new SampleUpdate();
+      su.setSampleId( new SampleIdentifier(sampleIdentifier) );
+      su.setProperties( properties );
+
+      v3.updateSamples(sessionToken, Collections.singletonList(su));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update sample. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error("Provided sample identifier does not match the format specifications.");
+    }
+
+    logger.warn(String.format("updateSample(\"%s\", %s) failed.", sampleIdentifier, properties));
+    return false;
+  }
+
+  /**
+   * Update a single property of the openBIS Sample identified by the provided sample identifier.
+   *
+   * @param sampleIdentifier openBIS sample identifier
+   * @param propertyName Code of the property
+   * @param propertyValue New value of the property
+   * @return True if update is successful; false else
+   */
+  public boolean updateSample(String sampleIdentifier, String propertyName, String propertyValue) {
+    ensureLoggedIn();
+
+    try {
+      SampleUpdate su = new SampleUpdate();
+      su.setSampleId( new SampleIdentifier(sampleIdentifier) );
+      su.setProperty( propertyName, propertyValue );
+
+      v3.updateSamples(sessionToken, Collections.singletonList(su));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update sample. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error("Provided sample identifier does not match the format specifications.");
+    }
+
+    logger.warn(String.format("updateSample(\"%s\", \"%s\", \"%s\") failed.",
+            sampleIdentifier, propertyName, propertyValue));
+    return false;
+  }
+
+  /**
+   * Update the associated experiment of the openBIS DataSet identified by the provided dataset
+   * identifier. If the new experiment is registered under a different space and/or project,
+   * the space and/or project of the dataset is updated as well.
+   *
+   * @param datasetIdentifier openBIS dataset identifier
+   * @param experimentIdentifier Identifier of openBIS experiment under which the dataset will be registered
+   * @return True if update is successful; false else
+   */
+  public boolean updateDataSet(String datasetIdentifier, ExperimentIdentifier experimentIdentifier) {
+    ensureLoggedIn();
+
+    try {
+      DataSetUpdate dsu = new DataSetUpdate();
+      dsu.setDataSetId( new DataSetPermId(datasetIdentifier) );
+      dsu.setExperimentId( experimentIdentifier );
+
+      v3.updateDataSets(sessionToken, Collections.singletonList(dsu));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update dataset. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error("Provided identifier does not match the format specifications.");
+    }
+
+    logger.warn(String.format("updateDataSet(\"%s\", %s) failed.", datasetIdentifier, experimentIdentifier));
+    return false;
+  }
+
+  /**
+   * Update the associated sample of the openBIS DataSet identified by the provided dataset
+   * identifier. If the new sample is registered under a different space, project and/or experiment,
+   * the space, project and/or experiment of the dataset is updated as well.
+   *
+   * @param datasetIdentifier openBIS dataset identifier
+   * @param sampleIdentifier Identifier of openBIS sample under which the dataset will be registered
+   * @return True if update is successful; false else
+   */
+  public boolean updateDataSet(String datasetIdentifier, SampleIdentifier sampleIdentifier) {
+    ensureLoggedIn();
+
+    try {
+      DataSetUpdate dsu = new DataSetUpdate();
+      dsu.setDataSetId( new DataSetPermId(datasetIdentifier) );
+      dsu.setSampleId( sampleIdentifier );
+
+      v3.updateDataSets(sessionToken, Collections.singletonList(dsu));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update dataset. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error("Provided dataset identifier does not match the format specifications.");
+    }
+
+    logger.warn(String.format("updateDataSet(\"%s\", %s) failed.", datasetIdentifier, sampleIdentifier));
+    return false;
+  }
+
+  /**
+   * Update the properties of the openBIS DataSet identified by the provided dataset identifier.
+   *
+   * @param datasetIdentifier openBIS dataset identifier
+   * @param properties Map with property name as key and property value as value
+   * @return True if update is successful; false else
+   */
+  public boolean updateDataSet(String datasetIdentifier, Map<String, String> properties) {
+    ensureLoggedIn();
+
+    try {
+      DataSetUpdate dsu = new DataSetUpdate();
+      dsu.setDataSetId( new DataSetPermId(datasetIdentifier) );
+      dsu.setProperties( properties );
+
+      v3.updateDataSets(sessionToken, Collections.singletonList(dsu));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update dataset. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error("Provided dataset identifier does not match the format specifications.");
+    }
+
+    logger.warn(String.format("updateDataSet(\"%s\", %s) failed.", datasetIdentifier, properties));
+    return false;
+  }
+
+  /**
+   * Update a single property of the openBIS DataSet identified by the provided dataset identifier.
+   *
+   * @param datasetIdentifier openBIS dataset identifier
+   * @param propertyName Code of the property
+   * @param propertyValue New value of the property
+   * @return True if update is successful; false else
+   */
+  public boolean updateDataSet(String datasetIdentifier, String propertyName, String propertyValue) {
+    ensureLoggedIn();
+
+    try {
+      DataSetUpdate dsu = new DataSetUpdate();
+      dsu.setDataSetId( new DataSetPermId(datasetIdentifier) );
+      dsu.setProperty( propertyName, propertyValue );
+
+      v3.updateDataSets(sessionToken, Collections.singletonList(dsu));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update dataset. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error("Provided dataset identifier does not match the format specifications.");
+    }
+
+    logger.warn(String.format("updateDataSet(\"%s\", \"%s\", \"%s\") failed.",
+            datasetIdentifier, propertyName, propertyValue));
+    return false;
+  }
+
+  /**
+   * Update the description of the openBIS Vocabulary identified by the provided vocabulary code.
+   *
+   * @param vocabularyCode openBIS vocabulary identifier
+   * @param description New description to be set
+   * @return True if update is successful; false else
+   */
+  public boolean updateVocabulary(String vocabularyCode, String description) {
+    ensureLoggedIn();
+
+    try {
+      VocabularyUpdate vu = new VocabularyUpdate();
+      vu.setVocabularyId( new VocabularyPermId(vocabularyCode) );
+      vu.setDescription( description );
+
+      v3.updateVocabularies(sessionToken, Collections.singletonList(vu));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update vocabulary. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error("Provided identifier does not match the format specifications.");
+    }
+
+    logger.warn(String.format("updateVocabulary(\"%s\", \"%s\") failed.", vocabularyCode, description));
+    return false;
+  }
+
+  /**
+   * Update the description of the openBIS Vocabulary identified by the provided vocabulary identifier.
+   * @param vocabularyTermCode openBIS vocabulary identifier
+   * @param description New description to be set
+   * @return True if update is successful; false else
+   */
+  public boolean updateVocabularyTerm(String vocabularyCode, String vocabularyTermCode, String description) {
+    ensureLoggedIn();
+
+    try {
+      VocabularyTermUpdate vtu = new VocabularyTermUpdate();
+      vtu.setVocabularyTermId( new VocabularyTermPermId(vocabularyCode, vocabularyTermCode) );
+      vtu.setDescription( description );
+
+      v3.updateVocabularyTerms(sessionToken, Collections.singletonList(vtu));
+      return true;
+
+    } catch (UserFailureException ufe) {
+      logger.error("Could not update dataset. Currently logged in user has sufficient permissions in openBIS?");
+    } catch (IllegalArgumentException iae) {
+      logger.error("Provided identifier does not match the format specifications.");
+    }
+
+    logger.warn(String.format("updateVocabularyTerm(\"%s\", \"%s\", \"%s\") failed.",
+            vocabularyCode, vocabularyTermCode, description));
+    return false;
   }
 
 
