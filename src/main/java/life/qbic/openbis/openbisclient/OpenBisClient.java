@@ -1938,13 +1938,13 @@ public class OpenBisClient implements IOpenBisClient {
   }
 
   /**
-   * Get InputStream of directory in dataset that can be used to recursively download all containing files.
+   * Get InputStream of element in dataset that can be used to recursively download all containing files.
    * @param datasetCode Code of dataset
-   * @param folder Name of directory in dataset
+   * @param datasetElement Name/Path of element in dataset
    * @return InputStream of directory
    */
   @Override
-  public InputStream getDatasetStream(String datasetCode, String folder) {
+  public InputStream getDatasetStream(String datasetCode, String datasetElement) {
     ensureLoggedIn();
 
     try {
@@ -1958,7 +1958,7 @@ public class OpenBisClient implements IOpenBisClient {
       DataSetFileDownload file;
 
       while ((file = reader.read()) != null) {
-        if (file.getDataSetFile().isDirectory() && file.getDataSetFile().getPath().endsWith(folder)) {
+        if (file.getDataSetFile().getPath().endsWith(datasetElement)) {
           return file.getInputStream();
         }
       }
